@@ -12,6 +12,18 @@ const NOT_CONFIGURED = "Falta configurar el ingreso (NEXT_PUBLIC_SUPABASE_URL y 
 const emailField = z.string().trim().toLowerCase().email("Revisá el mail");
 const passwordField = z.string().min(8, "La contraseña tiene que tener al menos 8 caracteres").max(72, "Máximo 72 caracteres");
 
+/** Token del captcha (si está activado en Supabase, sin él no deja entrar ni registrarse). */
+function captchaToken(form: FormData) {
+  const token = String(form.get("captcha") ?? "");
+  return token ? { captchaToken: token } : {};
+}
+
+function isCaptchaError(error: { code?: string; message?: string }) {
+  return error.code === "captcha_failed" || /captcha/i.test(error.message ?? "");
+}
+
+const CAPTCHA_FAILED = "No pudimos comprobar que no sos un robot. Esperá un momento y probá de nuevo.";
+
 /** Solo rutas de esta app: nada de mandar a otro sitio después de ingresar. */
 function safeBack(value: FormDataEntryValue | null) {
   const path = String(value ?? "");
@@ -32,8 +44,14 @@ export async function login(_: AuthState, form: FormData): Promise<AuthState> {
   if (!authConfigured) return { email, error: NOT_CONFIGURED };
 
   const supabase = await authClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password: String(form.get("clave") ?? "") });
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password: String(form.get("clave") ?? ""),
+    options: captchaToken(form),
+  });
   if (error) {
+    if (isCaptchaError(error)) return { email, error: CAPTCHA_FAILED };
+    if (error.code === "over_request_rate_limit") return { email, error: "Demasiados intentos. Esperá unos minutos." };
     if (error.code === "email_not_confirmed") {
       return { email, error: "Todavía no confirmaste tu mail. Buscá el correo que te mandamos (fijate en spam)." };
     }
@@ -56,9 +74,13 @@ export async function signup(_: AuthState, form: FormData): Promise<AuthState> {
   const { data, error } = await supabase.auth.signUp({
     email: email.data,
     password: password.data,
-    options: { emailRedirectTo: `${await appUrl()}/auth/confirmar` },
+    options: { emailRedirectTo: `${await appUrl()}/auth/confirmar`, ...captchaToken(form) },
   });
   if (error) {
+    if (isCaptchaError(error)) return { email: rawEmail, error: CAPTCHA_FAILED };
+    if (error.code === "over_email_send_rate_limit" || error.code === "over_request_rate_limit") {
+      return { email: rawEmail, error: "Hubo muchos registros seguidos. Probá de nuevo en un rato." };
+    }
     if (error.code === "user_already_exists") return { email: rawEmail, error: "Ya hay una cuenta con ese mail. Probá ingresar." };
     if (error.code === "weak_password") return { email: rawEmail, error: "Esa contraseña es muy fácil de adivinar. Probá otra." };
     return { email: rawEmail, error: "No se pudo crear la cuenta. Probá de nuevo en un rato." };
@@ -77,9 +99,11 @@ export async function requestPasswordReset(_: AuthState, form: FormData): Promis
   if (!email.success) return { email: rawEmail, error: email.error.issues[0].message };
 
   const supabase = await authClient();
-  await supabase.auth.resetPasswordForEmail(email.data, {
+  const { error } = await supabase.auth.resetPasswordForEmail(email.data, {
     redirectTo: `${await appUrl()}/auth/confirmar?siguiente=/nueva-clave`,
+    ...captchaToken(form),
   });
+  if (error && isCaptchaError(error)) return { email: rawEmail, error: CAPTCHA_FAILED };
   // Mismo mensaje exista o no la cuenta: no revelamos qué mails están registrados.
   return { email: rawEmail, notice: "Si hay una cuenta con ese mail, te llega un link para elegir otra contraseña." };
 }

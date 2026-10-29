@@ -5,6 +5,7 @@ import { QuotePdf } from "@/components/quotes/quote-pdf";
 import { userDb } from "@/lib/db";
 import { getBusiness } from "@/server/costing";
 import { formatQuoteNumber } from "@/lib/quote-text";
+import { isSafeLogo } from "@/lib/schemas";
 
 export const runtime = "nodejs";
 
@@ -40,7 +41,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       })),
       business: {
         name: business.name,
-        logoUrl: business.logoUrl,
+        // Defensa extra: solo imágenes embebidas (una URL haría que el servidor la vaya a buscar).
+        logoUrl: business.logoUrl && isSafeLogo(business.logoUrl) ? business.logoUrl : null,
         phone: business.phone,
         email: business.email,
         instagram: business.instagram,

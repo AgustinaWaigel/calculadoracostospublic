@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   decimalField,
   idField,
+  isSafeLogo,
   optionalDecimalField,
   optionalText,
   optionalUrl,
@@ -188,7 +189,8 @@ export const businessSchema = z
       .optional()
       .nullable()
       .transform((v) => (v ? v : null))
-      .refine((v) => v === null || v.length < 400_000, "El logo es muy pesado (máx. ~300 KB)"),
+      .refine((v) => v === null || v.length < 400_000, "El logo es muy pesado (máx. ~300 KB)")
+      .refine((v) => v === null || isSafeLogo(v), "El logo tiene que ser una imagen PNG, JPG o WebP"),
     phone: optionalText(40),
     email: optionalText(120),
     instagram: optionalText(60),

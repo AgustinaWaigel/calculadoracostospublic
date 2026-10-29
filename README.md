@@ -60,6 +60,9 @@ Después configurá las cuentas (abajo) y entrá a http://localhost:3000/registr
 | `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto de Supabase (el mismo de la base). |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clave publicable (anon) del proyecto. No es secreta. |
 | `NEXT_PUBLIC_APP_URL` | URL pública de la app. Se usa en los links de los mails. |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Opcional. Site Key de Cloudflare Turnstile para el captcha. |
+
+Al construir, `scripts/check-env.mjs` revisa las variables y dice cuál está mal (sin mostrar la contraseña).
 
 ## Cuentas (Supabase Auth)
 
@@ -67,6 +70,14 @@ Después configurá las cuentas (abajo) y entrá a http://localhost:3000/registr
 2. **Authentication → URL Configuration**: en *Site URL* poné la URL de la app (ej: `https://tu-dominio.com`) y en *Redirect URLs* agregá `https://tu-dominio.com/auth/confirmar` (y `http://localhost:3000/auth/confirmar` para desarrollo).
 3. Listo: cualquiera puede crear su cuenta en `/registro`. Al confirmar el mail entra directo; la primera vez se le arma su emprendimiento con canales de venta y descuentos por cantidad por defecto.
 4. Los mails de Supabase de prueba tienen un límite bajo por hora. Para producción conviene configurar un SMTP propio (**Authentication → Emails → SMTP Settings**).
+
+### Seguridad
+
+- **Captcha** en ingresar, registrarse y recuperar la contraseña (Cloudflare Turnstile, gratis). Para activarlo: creá un widget en Cloudflare → Turnstile con tu dominio, poné la *Site Key* en `NEXT_PUBLIC_TURNSTILE_SITE_KEY` y la *Secret Key* en Supabase → **Authentication → Attack Protection → Enable Captcha protection** (proveedor Turnstile). Activá los dos juntos: si Supabase lo pide y la app no lo muestra, nadie puede entrar.
+- **Límites de intentos**: los pone Supabase (Authentication → Rate Limits).
+- **Encabezados de seguridad** en todas las páginas: CSP, no se puede meter en un iframe, HSTS, nosniff.
+- **Logo**: solo se acepta una imagen embebida (PNG/JPG/WebP); nunca una dirección, porque el PDF la cargaría desde el servidor.
+- Contraseñas de al menos 8 caracteres; el mensaje de "recuperar" no revela si el mail tiene cuenta.
 
 ### Cómo se separan los datos
 

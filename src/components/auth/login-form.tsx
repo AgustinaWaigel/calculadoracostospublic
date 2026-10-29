@@ -6,6 +6,7 @@ import { Loader2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/shared/ui-bits";
+import { Captcha } from "./captcha";
 import { login, requestPasswordReset, signup, updatePassword, type AuthState } from "@/actions/auth";
 
 function Feedback({ state }: { state: AuthState }) {
@@ -68,6 +69,7 @@ export function LoginForm({ back }: { back?: string }) {
       <Link href="/recuperar" className="-mt-2 justify-self-end text-xs text-muted-foreground underline-offset-4 hover:underline">
         Me olvidé la contraseña
       </Link>
+      <Captcha resetKey={state} />
       <Feedback state={state} />
       <Submit pending={pending} idle="Entrar" busy="Entrando…" />
     </form>
@@ -81,6 +83,7 @@ export function SignupForm() {
     <form action={action} className="grid gap-4">
       <EmailField id="signup-email" defaultValue={state?.email} />
       <NewPasswordFields prefix="signup" />
+      <Captcha resetKey={state} />
       <Feedback state={state} />
       <Submit pending={pending} idle="Crear cuenta" busy="Creando…" />
     </form>
@@ -92,6 +95,7 @@ export function ResetForm() {
   return (
     <form action={action} className="grid gap-4">
       <EmailField id="reset-email" defaultValue={state?.email} />
+      <Captcha resetKey={state} />
       <Feedback state={state} />
       <Submit pending={pending} idle="Mandame el link" busy="Enviando…" />
     </form>

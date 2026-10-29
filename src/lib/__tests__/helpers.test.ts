@@ -1,3 +1,4 @@
+import { isSafeLogo } from "@/lib/schemas";
 import { describe, expect, it } from "vitest";
 import { formatMoney, parseMoneyInput, arsToUsd } from "@/lib/money";
 import { normalizeArPhone, whatsappUrl } from "@/lib/whatsapp";
@@ -31,5 +32,15 @@ describe("whatsapp", () => {
   });
   it("arma el link wa.me", () => {
     expect(whatsappUrl("Hola $", "1112345678")).toBe("https://wa.me/5491112345678?text=Hola%20%24");
+  });
+});
+
+describe("isSafeLogo", () => {
+  it("acepta solo imágenes embebidas", () => {
+    expect(isSafeLogo("data:image/png;base64,iVBORw0KGgo=")).toBe(true);
+    expect(isSafeLogo("http://169.254.169.254/latest/meta-data")).toBe(false);
+    expect(isSafeLogo("/etc/passwd")).toBe(false);
+    expect(isSafeLogo("data:image/svg+xml;base64,PHN2Zz4=")).toBe(false);
+    expect(isSafeLogo("data:image/png;base64,abc\" onerror=")).toBe(false);
   });
 });

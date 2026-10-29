@@ -6,7 +6,7 @@ import { rawDb, userDb } from "@/lib/db";
 import { requireUserId } from "@/lib/auth/server";
 import { parseCsv } from "@/lib/csv";
 import { D } from "@/lib/money";
-import { supplySchema } from "@/lib/schemas";
+import { isSafeLogo, supplySchema } from "@/lib/schemas";
 import { errorMessage, fail, ok, type ActionResult } from "@/lib/action-result";
 import { BACKUP_VERSION } from "@/server/backup";
 
@@ -91,7 +91,9 @@ function adopt(d: z.infer<typeof backupSchema>["data"], userId: string) {
     });
   const [business] = d.business;
   return {
-    business: business ? { ...business, id: userId } : { id: userId, name: "Mi Emprendimiento" },
+    business: business
+      ? { ...business, id: userId, logoUrl: typeof business.logoUrl === "string" && isSafeLogo(business.logoUrl) ? business.logoUrl : null }
+      : { id: userId, name: "Mi Emprendimiento" },
     supplies: map("supplies"),
     supplyPriceHistory: map("supplyPriceHistory"),
     laborProfiles: map("laborProfiles"),

@@ -62,6 +62,14 @@ export const optionalText = (max = 500) =>
 export const requiredText = (label: string, max = 120) =>
   z.string().trim().min(1, `${label} es obligatorio`).max(max, `Máximo ${max} caracteres`);
 
+/**
+ * El logo solo puede ser una imagen embebida (data URL PNG/JPEG/WebP). Nunca una dirección:
+ * el PDF la carga desde el servidor y una URL lo haría pedir lo que el usuario quiera.
+ */
+export function isSafeLogo(value: string): boolean {
+  return /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(value);
+}
+
 export const optionalUrl = z
   .string()
   .trim()
