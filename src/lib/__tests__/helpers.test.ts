@@ -1,3 +1,4 @@
+import { normalizeSupabaseUrl } from "@/lib/auth/config";
 import { isSafeLogo } from "@/lib/schemas";
 import { describe, expect, it } from "vitest";
 import { formatMoney, parseMoneyInput, arsToUsd } from "@/lib/money";
@@ -42,5 +43,15 @@ describe("isSafeLogo", () => {
     expect(isSafeLogo("/etc/passwd")).toBe(false);
     expect(isSafeLogo("data:image/svg+xml;base64,PHN2Zz4=")).toBe(false);
     expect(isSafeLogo("data:image/png;base64,abc\" onerror=")).toBe(false);
+  });
+});
+
+describe("normalizeSupabaseUrl", () => {
+  it("deja solo el origen del proyecto", () => {
+    expect(normalizeSupabaseUrl("https://abc123.supabase.co/rest/v1/")).toBe("https://abc123.supabase.co");
+    expect(normalizeSupabaseUrl(" https://abc123.supabase.co/ ")).toBe("https://abc123.supabase.co");
+    expect(normalizeSupabaseUrl('"https://abc123.supabase.co"')).toBe("https://abc123.supabase.co");
+    expect(normalizeSupabaseUrl("abc123.supabase.co")).toBe("https://abc123.supabase.co");
+    expect(normalizeSupabaseUrl("https://supabase.com/dashboard/project/abc123/settings/api")).toBe("https://abc123.supabase.co");
   });
 });

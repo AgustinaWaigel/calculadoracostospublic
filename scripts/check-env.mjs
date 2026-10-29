@@ -35,8 +35,14 @@ function checkDbUrl(name, port) {
 
 checkDbUrl("DATABASE_URL", "6543");
 checkDbUrl("DIRECT_URL", "5432");
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL?.startsWith("https://")) {
-  problems.push("NEXT_PUBLIC_SUPABASE_URL tiene que ser la Project URL (https://xxxx.supabase.co).");
+const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
+if (!supabaseUrl) {
+  problems.push("NEXT_PUBLIC_SUPABASE_URL no está cargada.");
+} else if (!/^https:\/\/[a-z0-9]+\.supabase\.co\/?$/i.test(supabaseUrl)) {
+  // La app la corrige sola, pero conviene dejarla bien.
+  console.warn(
+    `⚠ NEXT_PUBLIC_SUPABASE_URL debería ser solo https://xxxx.supabase.co (Project Settings → Data API), sin nada después. Ahora es ${JSON.stringify(supabaseUrl.slice(0, 60))}.`,
+  );
 }
 if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) problems.push("NEXT_PUBLIC_SUPABASE_ANON_KEY no está cargada.");
 
