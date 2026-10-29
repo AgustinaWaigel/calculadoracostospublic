@@ -9,6 +9,7 @@ import {
   ReceiptIcon,
   SettingsIcon,
   ShapesIcon,
+  ShoppingBagIcon,
   type LucideIcon,
 } from "lucide-react";
 
@@ -85,6 +86,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/costos-fijos", label: "Costos fijos", icon: ReceiptIcon, accent: "cielo" },
   { href: "/productos", label: "Productos", icon: ShapesIcon, accent: "lavanda", mobile: true },
   { href: "/presupuestos", label: "Presupuestos", icon: FileTextIcon, accent: "amanecer", mobile: true },
+  { href: "/ventas", label: "Ventas", icon: ShoppingBagIcon, accent: "menta" },
   { href: "/inversiones", label: "Inversiones", icon: PiggyBankIcon, accent: "kraft" },
   { href: "/impresion", label: "Impresión", icon: PrinterIcon, accent: "menta" },
   { href: "/calculadora", label: "Calculadora rápida", icon: CalculatorIcon, accent: "halo" },

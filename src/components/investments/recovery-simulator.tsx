@@ -20,7 +20,11 @@ export function RecoverySimulator({ remaining, suggested }: { remaining: string;
       <Field
         label="¿Cuánto podés recuperar por mes?"
         htmlFor="sim-per-month"
-        hint={suggested ? "Arranca con tu promedio hasta ahora. Probá otros montos." : "Lo que te queda de ganancia por mes."}
+        hint={
+          suggested
+            ? "Arranca con tu promedio hasta ahora. Probá otros montos."
+            : "Lo que te queda de ganancia por mes."
+        }
       >
         <Input
           id="sim-per-month"

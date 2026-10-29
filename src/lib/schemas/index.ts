@@ -273,6 +273,30 @@ export const quoteSchema = z.object({
 export type QuoteInput = z.input<typeof quoteSchema>;
 export type QuoteData = z.output<typeof quoteSchema>;
 
+// ───────── Ventas ─────────
+
+export const saleSchema = z.object({
+  id: idField.optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida"),
+  clientName: optionalText(120),
+  channelId: z.string().nullable().optional(),
+  discountPercent: percentField("El descuento", 99),
+  notes: optionalText(1000),
+  items: z
+    .array(
+      z.object({
+        productId: z.string().nullable().optional(),
+        description: requiredText("La descripción", 200),
+        quantity: decimalField({ min: 0, gt: true, label: "La cantidad" }),
+        unitPrice: decimalField({ min: 0, label: "El precio" }),
+        unitCost: optionalDecimalField({ min: 0, label: "El costo" }),
+      }),
+    )
+    .min(1, "Agregá al menos un ítem"),
+});
+export type SaleInput = z.input<typeof saleSchema>;
+export type SaleData = z.output<typeof saleSchema>;
+
 // ───────── Inversiones ─────────
 
 export const investmentMovementSchema = z.object({

@@ -33,6 +33,8 @@ const backupSchema = z.object({
     // Opcional: los backups anteriores a la calculadora de impresión no la traen.
     printInks: rows.default([]),
     investmentMovements: rows.default([]),
+    sales: rows.default([]),
+    saleItems: rows.default([]),
   }),
 });
 
@@ -45,6 +47,8 @@ const REFS: Record<string, Record<string, string>> = {
   productLabor: { productId: "products", profileId: "laborProfiles" },
   productMachines: { productId: "products", machineId: "machines" },
   quoteItems: { quoteId: "quotes", productId: "products" },
+  sales: { channelId: "salesChannels", quoteId: "quotes" },
+  saleItems: { saleId: "sales", productId: "products" },
   products: { duplicatedFromId: "products" },
 };
 const OWNED_TABLES = [
@@ -59,6 +63,7 @@ const OWNED_TABLES = [
   "quotes",
   "printInks",
   "investmentMovements",
+  "sales",
 ] as const;
 // Valores de versiones anteriores (con Mercado Libre) que ya no existen.
 const OLD_PRICE_SOURCES = new Set(["MELI_SEARCH", "MELI_LINK", "MELI_REFRESH"]);
@@ -70,7 +75,7 @@ const OLD_CHANNEL_TYPES = new Set(["MELI_CLASSIC", "MELI_PREMIUM"]);
  */
 function adopt(d: z.infer<typeof backupSchema>["data"], userId: string) {
   const ids: Record<string, Map<string, string>> = {};
-  for (const table of [...OWNED_TABLES, "supplyPriceHistory", "productSupplies", "productLabor", "productMachines", "quoteItems"] as const) {
+  for (const table of [...OWNED_TABLES, "supplyPriceHistory", "productSupplies", "productLabor", "productMachines", "quoteItems", "saleItems"] as const) {
     ids[table] = new Map(d[table].map((r) => [String(r.id), crypto.randomUUID()]));
   }
   const map = (table: keyof typeof d) =>
@@ -82,8 +87,9 @@ function adopt(d: z.infer<typeof backupSchema>["data"], userId: string) {
       for (const [field, target] of Object.entries(REFS[table] ?? {})) {
         if (row[field] == null) continue;
         const mapped = ids[target].get(String(row[field]));
-        // Un producto borrado deja la línea del presupuesto suelta; en lo demás, el backup está roto.
-        if (!mapped && field !== "productId" && field !== "duplicatedFromId") throw new Error(`Falta ${target} ${row[field]}`);
+        // Un producto, canal o presupuesto borrado deja la referencia suelta; en lo demás, el backup está roto.
+        const optional = ["productId", "duplicatedFromId", "channelId"].includes(field) || (table === "sales" && field === "quoteId");
+        if (!mapped && !optional) throw new Error(`Falta ${target} ${row[field]}`);
         row[field] = mapped ?? null;
       }
       if (OWNED_TABLES.includes(table as (typeof OWNED_TABLES)[number])) row.userId = userId;
@@ -112,6 +118,8 @@ function adopt(d: z.infer<typeof backupSchema>["data"], userId: string) {
     quoteItems: map("quoteItems"),
     printInks: map("printInks"),
     investmentMovements: map("investmentMovements"),
+    sales: map("sales"),
+    saleItems: map("saleItems"),
   };
 }
 
@@ -138,6 +146,7 @@ export async function importBackup(json: string): Promise<ActionResult<{ counts:
     await rawDb.$transaction(
       async (tx) => {
         // Las hijas se borran en cascada con su padre.
+        await tx.sale.deleteMany({ where: mine });
         await tx.quote.deleteMany({ where: mine });
         await tx.product.deleteMany({ where: mine });
         await tx.supply.deleteMany({ where: mine });
@@ -168,6 +177,8 @@ export async function importBackup(json: string): Promise<ActionResult<{ counts:
         await tx.quoteItem.createMany({ data: as(rows.quoteItems) });
         await tx.printInk.createMany({ data: as(rows.printInks) });
         await tx.investmentMovement.createMany({ data: as(rows.investmentMovements) });
+        await tx.sale.createMany({ data: as(rows.sales) });
+        await tx.saleItem.createMany({ data: as(rows.saleItems) });
       },
       { timeout: 30_000 },
     );

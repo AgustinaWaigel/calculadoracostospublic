@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { investmentSummary, monthsToRecover, quoteProfit } from "@/lib/calc/investment";
+import { investmentSummary, monthsToRecover } from "@/lib/calc/investment";
 
 const day = (s: string) => new Date(`${s}T00:00:00.000Z`);
 
@@ -63,46 +63,5 @@ describe("recupero de la inversión", () => {
     expect(monthsToRecover(300000, 40000)).toBe(8);
     expect(monthsToRecover(0, 40000)).toBe(0);
     expect(monthsToRecover(1000, 0)).toBeNull();
-  });
-});
-
-describe("ganancia de un presupuesto aceptado", () => {
-  const direct = { name: "Directo" };
-
-  it("precio × cantidad menos el costo, con el descuento extra", () => {
-    const r = quoteProfit({
-      items: [{ quantity: 10, unitPrice: 1000, unitCost: 600 }],
-      discountPercent: 10,
-      vatRate: 0,
-      channel: direct,
-    });
-    // 10.000 − 10% = 9.000 cobrado, − 6.000 de costo.
-    expect(r.profit.toString()).toBe("3000");
-    expect(r.skippedItems).toBe(0);
-  });
-
-  it("descuenta IVA y comisiones; el envío va una sola vez", () => {
-    const r = quoteProfit({
-      items: [{ quantity: 2, unitPrice: 1210, unitCost: 500 }],
-      discountPercent: 0,
-      vatRate: 0.21,
-      channel: { name: "MP", paymentFeePercent: 5, shippingCost: 100 },
-    });
-    // 2.420 → 2.000 sin IVA − 121 de pasarela − 1.000 de costo − 100 de envío.
-    expect(r.profit.toString()).toBe("779");
-  });
-
-  it("los ítems libres no se cuentan", () => {
-    const r = quoteProfit({
-      items: [
-        { quantity: 1, unitPrice: 1000, unitCost: 400 },
-        { quantity: 1, unitPrice: 5000, unitCost: null },
-      ],
-      discountPercent: 0,
-      vatRate: 0,
-      channel: direct,
-    });
-    expect(r.profit.toString()).toBe("600");
-    expect(r.skippedItems).toBe(1);
   });
 });

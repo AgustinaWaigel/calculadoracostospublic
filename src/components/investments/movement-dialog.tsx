@@ -41,8 +41,8 @@ const COPY = {
     newTitle: "Nuevo recupero",
     editTitle: "Editar recupero",
     description:
-      "Ganancia de ventas que no pasaron por un presupuesto (los aceptados ya suman solos). Lo que te quedó, no lo que facturaste.",
-    placeholder: "Ej: Ventas por Instagram de octubre",
+      "Plata que recuperaste por fuera de tus ventas (las ventas ya suman solas). Por ejemplo, si vendiste una máquina vieja.",
+    placeholder: "Ej: Vendí la impresora vieja",
   },
 } as const;
 
@@ -85,7 +85,10 @@ export function MovementDialog({
           id={formId}
           className="grid gap-4"
           onSubmit={form.handleSubmit(() =>
-            run(() => saveInvestmentMovement(form.getValues()), () => setOpen(false)),
+            run(
+              () => saveInvestmentMovement(form.getValues()),
+              () => setOpen(false),
+            ),
           )}
         >
           <Field label="Descripción" htmlFor={`${formId}-desc`} error={errors.description?.message}>

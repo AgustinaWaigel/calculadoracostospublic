@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/ui-bits";
@@ -14,7 +15,13 @@ export default async function PresupuestoPage({ params }: { params: Promise<{ id
   const db = await userDb();
   const { id } = await params;
   const [quote, options] = await Promise.all([
-    db.quote.findUnique({ where: { id }, include: { items: { orderBy: { sortOrder: "asc" } } } }),
+    db.quote.findUnique({
+      where: { id },
+      include: {
+        items: { orderBy: { sortOrder: "asc" } },
+        sale: { select: { id: true } },
+      },
+    }),
     getQuoteOptions(),
   ]);
   if (!quote) notFound();
@@ -30,6 +37,11 @@ export default async function PresupuestoPage({ params }: { params: Promise<{ id
           <span className="inline-flex items-center gap-2">
             {quote.clientName}
             {expired && <Badge variant="destructive">Vencido</Badge>}
+            {quote.sale && (
+              <Link href={`/ventas/${quote.sale.id}`} className="text-primary underline">
+                Ver la venta
+              </Link>
+            )}
           </span>
         }
         actions={

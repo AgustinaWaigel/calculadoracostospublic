@@ -1,5 +1,4 @@
-import { D, Decimal, ZERO, pct, sum, type DecimalInput } from "@/lib/money";
-import type { ChannelConfig } from "./pricing";
+import { D, Decimal, ZERO, sum, type DecimalInput } from "@/lib/money";
 
 const DAYS_PER_MONTH = 30.44;
 
@@ -72,36 +71,4 @@ export function investmentSummary(movements: InvestmentMovementInput[], now: Dat
     monthsLeft,
     recoveryDate: monthsLeft != null && monthsLeft > 0 ? addMonths(now, monthsLeft) : null,
   };
-}
-
-export interface QuoteProfitInput {
-  items: { quantity: DecimalInput; unitPrice: DecimalInput; /** null = ítem libre, sin costo conocido. */ unitCost: DecimalInput | null }[];
-  /** Descuento extra sobre el total del presupuesto, en %. */
-  discountPercent: DecimalInput;
-  /** IVA incluido en el precio (0 si no facturás con IVA), como fracción: 0,21. */
-  vatRate: DecimalInput;
-  /** Canal de venta (comisiones, pasarela, envío que absorbés). */
-  channel: ChannelConfig;
-}
-
-/**
- * Ganancia neta estimada de un presupuesto aceptado: lo cobrado (con el descuento extra, sin IVA ni
- * comisiones) menos el costo de cada producto. El cargo fijo y el envío del canal se cuentan una vez
- * por presupuesto. Los ítems libres no se cuentan porque no sabemos cuánto costaron.
- */
-export function quoteProfit(input: QuoteProfitInput): { profit: Decimal; skippedItems: number } {
-  const keep = D(1).minus(pct(input.discountPercent));
-  const vat = D(input.vatRate).plus(1);
-  const feeRate = pct(input.channel.commissionPercent ?? 0)
-    .plus(pct(input.channel.paymentFeePercent ?? 0))
-    .plus(pct(input.channel.installmentsPercent ?? 0));
-  const known = input.items.filter((i) => i.unitCost != null);
-  if (known.length === 0) return { profit: ZERO, skippedItems: input.items.length };
-
-  const lines = known.map((i) => {
-    const charged = D(i.unitPrice).times(D(i.quantity)).times(keep);
-    return charged.div(vat).minus(charged.times(feeRate)).minus(D(i.unitCost!).times(D(i.quantity)));
-  });
-  const perSale = D(input.channel.fixedFee ?? 0).plus(D(input.channel.shippingCost ?? 0));
-  return { profit: sum(lines).minus(perSale), skippedItems: input.items.length - known.length };
 }

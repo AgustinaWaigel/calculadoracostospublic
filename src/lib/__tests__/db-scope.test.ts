@@ -20,6 +20,7 @@ describe.skipIf(!url)("cada cuenta ve solo lo suyo", () => {
   async function wipe() {
     const raw = mod.rawDb;
     const where = { userId: { in: [A, B] } };
+    await raw.sale.deleteMany({ where });
     await raw.quote.deleteMany({ where });
     await raw.product.deleteMany({ where });
     await raw.supply.deleteMany({ where });
@@ -127,6 +128,33 @@ describe.skipIf(!url)("cada cuenta ve solo lo suyo", () => {
     expect(await b.investmentMovement.count()).toBe(0);
     await expect(b.investmentMovement.delete({ where: { id: m.id } })).rejects.toThrow();
     expect(await a.investmentMovement.count()).toBe(1);
+  });
+
+  it("una venta solo puede usar canal, presupuesto y productos propios", async () => {
+    const canalAjeno = (await a.salesChannel.findFirstOrThrow()).id;
+    const productoAjeno = (await a.product.create({ data: { userId: A, name: "Agenda" } })).id;
+    const presupuestoAjeno = (
+      await a.quote.create({ data: { userId: A, number: 500, clientName: "C", validUntil: new Date() } })
+    ).id;
+    const venta = (extra: object) => ({ userId: B, date: new Date(), ...extra });
+
+    await expect(b.sale.create({ data: venta({ channelId: canalAjeno }) })).rejects.toThrow(mod.ForbiddenRefError);
+    await expect(b.sale.create({ data: venta({ quoteId: presupuestoAjeno }) })).rejects.toThrow(mod.ForbiddenRefError);
+    await expect(
+      b.sale.create({
+        data: venta({ items: { create: [{ productId: productoAjeno, description: "x", quantity: 1, unitPrice: 1 }] } }),
+      }),
+    ).rejects.toThrow(mod.ForbiddenRefError);
+
+    const propia = await b.sale.create({
+      data: venta({
+        channelId: (await b.salesChannel.findFirstOrThrow()).id,
+        items: { create: [{ description: "Suelto", quantity: 2, unitPrice: 100 }] },
+      }),
+    });
+    expect(await a.sale.count()).toBe(0);
+    expect(await b.saleItem.count()).toBe(1);
+    await expect(a.sale.delete({ where: { id: propia.id } })).rejects.toThrow();
   });
 
   it("cada cuenta tiene su propio emprendimiento", async () => {

@@ -14,7 +14,7 @@ export const rawDb = globalForPrisma.prisma ?? new PrismaClient();
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = rawDb;
 
-type Delegate = "supply" | "laborProfile" | "machine" | "product" | "quote";
+type Delegate = "supply" | "laborProfile" | "machine" | "product" | "quote" | "sale" | "salesChannel";
 
 /** Tablas con columna `userId`. */
 const OWNED = new Set([
@@ -29,7 +29,13 @@ const OWNED = new Set([
   "Quote",
   "PrintInk",
   "InvestmentMovement",
+  "Sale",
 ]);
+
+/** Columnas de tablas con dueño que apuntan a otra fila con dueño (la venta → su canal y su presupuesto). */
+const OWNED_REFS: Record<string, Record<string, Delegate>> = {
+  Sale: { channelId: "salesChannel", quoteId: "quote" },
+};
 
 /**
  * Tablas hijas: el dueño es el de la fila padre (`parent`). `refs` son las columnas que apuntan a
@@ -41,6 +47,7 @@ const CHILDREN: Record<string, { parent: Delegate; refs: Record<string, Delegate
   ProductLabor: { parent: "product", refs: { productId: "product", profileId: "laborProfile" } },
   ProductMachine: { parent: "product", refs: { productId: "product", machineId: "machine" } },
   QuoteItem: { parent: "quote", refs: { quoteId: "quote", productId: "product" } },
+  SaleItem: { parent: "sale", refs: { saleId: "sale", productId: "product" } },
 };
 
 /** Relaciones que se escriben anidadas desde el padre (ej: la receta al guardar un producto). */
@@ -48,6 +55,7 @@ const NESTED: Record<string, Record<string, string>> = {
   Supply: { priceHistory: "SupplyPriceHistory" },
   Product: { supplies: "ProductSupply", labor: "ProductLabor", machines: "ProductMachine" },
   Quote: { items: "QuoteItem" },
+  Sale: { items: "SaleItem" },
 };
 
 const WHERE_OPS = new Set([
@@ -159,16 +167,17 @@ export function scopedDb(userId: string) {
           }
 
           const child = CHILDREN[model];
+          const refs = child?.refs ?? OWNED_REFS[model];
           switch (operation) {
             case "create":
               a.data = withOwner(model, a.data as Row, userId);
-              if (child) await checkRefs(userId, [a.data as Row], child.refs);
+              if (refs) await checkRefs(userId, [a.data as Row], refs);
               await checkNested(userId, model, a.data as Row);
               break;
             case "createMany":
             case "createManyAndReturn": {
               const rows = list(a.data as Row | Row[]).map((r) => withOwner(model, r, userId));
-              if (child) await checkRefs(userId, rows, child.refs);
+              if (refs) await checkRefs(userId, rows, refs);
               for (const r of rows) await checkNested(userId, model, r);
               a.data = rows;
               break;
@@ -177,13 +186,13 @@ export function scopedDb(userId: string) {
             case "updateMany":
             case "updateManyAndReturn":
               a.data = withoutOwner(model, a.data as Row);
-              if (child) await checkRefs(userId, [a.data as Row], child.refs);
+              if (refs) await checkRefs(userId, [a.data as Row], refs);
               await checkNested(userId, model, a.data as Row);
               break;
             case "upsert":
               a.create = withOwner(model, a.create as Row, userId);
               a.update = withoutOwner(model, a.update as Row);
-              if (child) await checkRefs(userId, [a.create as Row, a.update as Row], child.refs);
+              if (refs) await checkRefs(userId, [a.create as Row, a.update as Row], refs);
               await checkNested(userId, model, a.create as Row);
               await checkNested(userId, model, a.update as Row);
               break;

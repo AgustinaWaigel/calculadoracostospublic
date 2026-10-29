@@ -5,6 +5,7 @@ import { z } from "zod";
 import { userDb } from "@/lib/db";
 import { quoteSchema, quoteStatuses } from "@/lib/schemas";
 import { errorMessage, fail, ok, zodFail, type ActionResult } from "@/lib/action-result";
+import { saleDataFromQuote } from "@/server/sales";
 
 function revalidateQuotes(id?: string) {
   revalidatePath("/presupuestos");
@@ -68,7 +69,10 @@ export async function setQuoteStatus(id: string, status: unknown): Promise<Actio
   const db = await userDb();
   const parsed = z.enum(quoteStatuses).safeParse(status);
   if (!parsed.success) return fail("Estado inválido");
-  const current = await db.quote.findUnique({ where: { id }, select: { status: true, acceptedAt: true } });
+  const current = await db.quote.findUnique({
+    where: { id },
+    select: { status: true, acceptedAt: true, sale: { select: { id: true } } },
+  });
   if (!current) return fail("No existe el presupuesto");
   const accepted = parsed.data === "ACCEPTED";
   await db.quote.update({
@@ -79,9 +83,24 @@ export async function setQuoteStatus(id: string, status: unknown): Promise<Actio
       acceptedAt: accepted ? (current.status === "ACCEPTED" && current.acceptedAt) || new Date() : null,
     },
   });
+
+  // Aceptado = vendido: se registra la venta (y se borra si deja de estar aceptado).
+  let message = "Estado actualizado";
+  if (accepted && !current.sale) {
+    const data = await saleDataFromQuote(id);
+    if (data) {
+      await db.sale.create({ data });
+      message = "Aceptado: se registró la venta";
+    }
+  } else if (!accepted && current.sale) {
+    await db.sale.delete({ where: { id: current.sale.id } });
+    message = "Estado actualizado: se quitó la venta";
+  }
+
   revalidateQuotes(id);
+  revalidatePath("/ventas");
   revalidatePath("/inversiones");
-  return ok(undefined, "Estado actualizado");
+  return ok(undefined, message);
 }
 
 export async function deleteQuote(id: string): Promise<ActionResult> {

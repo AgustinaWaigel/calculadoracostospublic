@@ -211,6 +211,7 @@ model Product {
   labor             ProductLabor[]
   machines          ProductMachine[]
   quoteItems        QuoteItem[]
+  saleItems         SaleItem[]
 
   @@index([userId])
 }
@@ -264,6 +265,7 @@ model SalesChannel {
   applyIva            Boolean     @default(true)
   active              Boolean     @default(true)
   sortOrder           Int         @default(0)
+  sales               Sale[]
 
   @@index([userId])
 }
@@ -303,6 +305,7 @@ model Quote {
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   items           QuoteItem[]
+  sale            Sale?
 
   @@unique([userId, number])
 }
@@ -324,6 +327,42 @@ model QuoteItem {
   description String
   quantity    Decimal
   unitPrice   Decimal
+  sortOrder   Int      @default(0)
+}
+
+// ───────── Ventas ─────────
+
+model Sale {
+  id              String        @id @default(cuid())
+  userId          String
+  date            DateTime
+  clientName      String?
+  channelId       String?
+  channel         SalesChannel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  /// Si se generó al aceptar un presupuesto.
+  quoteId         String?       @unique
+  quote           Quote?        @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  /// Descuento extra sobre el total, en %.
+  discountPercent Decimal       @default(0)
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  items           SaleItem[]
+
+  @@index([userId, date])
+}
+
+model SaleItem {
+  id          String   @id @default(cuid())
+  saleId      String
+  sale        Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId   String?
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  description String
+  quantity    Decimal
+  unitPrice   Decimal
+  /// Costo por unidad al momento de vender (se guarda para que la ganancia no cambie si suben los insumos). null = no se sabe.
+  unitCost    Decimal?
   sortOrder   Int      @default(0)
 }
 
