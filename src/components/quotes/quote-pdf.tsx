@@ -25,19 +25,17 @@ export interface QuotePdfData {
   };
 }
 
-// Marca de Alas de Ángel (alasdeangel.com.ar): mismos colores y letras que la web.
-const BRAND = {
-  tinta: "#0B5E41", // verde oscuro: el "negro" de la marca
-  tintaSuave: "#2F6E55",
-  nube: "#F6E7D4", // crema
-  renglon: "#E3CDB6",
-  amanecer: "#7F2350", // vino
-  amanecerFuerte: "#6A1B42",
-  halo: "#B9D53B", // lima
-  lavanda: "#F4A9CB", // rosa
-  cielo: "#F9D5E4", // rosa muy claro
-  menta: "#7CC4A0",
-  frase: "Para escribir, soñar y volar.",
+// Paleta neutra en verdes: el presupuesto va a nombre de cada emprendimiento, no de una marca.
+const PALETTE = {
+  ink: "#0B5E41", // verde oscuro: textos y portada
+  inkSoft: "#2F6E55",
+  paper: "#FFFFFF",
+  rowAlt: "#F1F7F3",
+  line: "#D5E7DC",
+  mint: "#7CC4A0",
+  mintLight: "#DCEFE4",
+  lime: "#B9D53B",
+  closing: "Gracias por tu consulta",
 };
 
 // Las fuentes viajan con la app (licencia OFL): Londrina Solid para títulos y precios, Karla para el resto.
@@ -62,10 +60,10 @@ Font.registerHyphenationCallback((word) => [word]);
 const PAD = 40;
 
 const s = StyleSheet.create({
-  page: { paddingBottom: 90, fontSize: 10, fontFamily: TEXT, color: BRAND.tinta },
-  // Portada en vino con títulos en rosa y texto en crema, como las páginas internas de la web.
+  page: { paddingBottom: 90, fontSize: 10, fontFamily: TEXT, color: PALETTE.ink },
+  // Portada verde oscuro con el título en menta.
   header: {
-    backgroundColor: BRAND.amanecer,
+    backgroundColor: PALETTE.ink,
     paddingHorizontal: PAD,
     paddingVertical: 26,
     flexDirection: "row",
@@ -74,37 +72,37 @@ const s = StyleSheet.create({
   },
   brand: { flexDirection: "row", alignItems: "center", gap: 12 },
   logo: { width: 64, height: 64, objectFit: "contain", borderRadius: 8 },
-  businessName: { fontFamily: DISPLAY, fontSize: 24, color: BRAND.nube, textTransform: "uppercase" },
-  contact: { color: BRAND.nube, fontSize: 9, marginTop: 1 },
-  title: { fontFamily: DISPLAY, fontSize: 28, color: BRAND.lavanda, textAlign: "right", textTransform: "uppercase" },
-  meta: { textAlign: "right", color: BRAND.nube, fontSize: 9, marginTop: 1 },
-  number: { textAlign: "right", color: BRAND.nube, fontFamily: DISPLAY, fontSize: 14 },
+  businessName: { fontFamily: DISPLAY, fontSize: 24, color: PALETTE.paper, textTransform: "uppercase" },
+  contact: { color: PALETTE.mintLight, fontSize: 9, marginTop: 1 },
+  title: { fontFamily: DISPLAY, fontSize: 28, color: PALETTE.mint, textAlign: "right", textTransform: "uppercase" },
+  meta: { textAlign: "right", color: PALETTE.mintLight, fontSize: 9, marginTop: 1 },
+  number: { textAlign: "right", color: PALETTE.paper, fontFamily: DISPLAY, fontSize: 14 },
   // Cinta de colores debajo de la portada.
   ribbon: { flexDirection: "row", height: 6 },
   body: { paddingHorizontal: PAD, paddingTop: 26 },
   label: {
     fontSize: 8,
     fontWeight: 700,
-    color: BRAND.amanecerFuerte,
+    color: PALETTE.inkSoft,
     textTransform: "uppercase",
     letterSpacing: 1,
     marginBottom: 3,
   },
-  clientName: { fontFamily: DISPLAY, fontSize: 18, color: BRAND.tinta },
-  muted: { color: BRAND.tintaSuave },
+  clientName: { fontFamily: DISPLAY, fontSize: 18, color: PALETTE.ink },
+  muted: { color: PALETTE.inkSoft },
   section: { marginBottom: 20 },
-  table: { borderRadius: 6, overflow: "hidden", borderWidth: 1, borderColor: BRAND.tinta },
-  headRow: { flexDirection: "row", paddingVertical: 7, backgroundColor: BRAND.tinta },
-  th: { fontSize: 8, fontWeight: 700, color: BRAND.nube, textTransform: "uppercase", letterSpacing: 0.8 },
-  row: { flexDirection: "row", paddingVertical: 7, borderTopWidth: 1, borderColor: BRAND.renglon },
-  rowAlt: { backgroundColor: BRAND.nube },
+  table: { borderRadius: 6, overflow: "hidden", borderWidth: 1, borderColor: PALETTE.ink },
+  headRow: { flexDirection: "row", paddingVertical: 7, backgroundColor: PALETTE.inkSoft },
+  th: { fontSize: 8, fontWeight: 700, color: PALETTE.paper, textTransform: "uppercase", letterSpacing: 0.8 },
+  row: { flexDirection: "row", paddingVertical: 7, borderTopWidth: 1, borderColor: PALETTE.line },
+  rowAlt: { backgroundColor: PALETTE.rowAlt },
   cDesc: { flex: 1, paddingHorizontal: 8 },
   cQty: { width: 50, textAlign: "right", paddingHorizontal: 8 },
   cPrice: { width: 95, textAlign: "right", paddingHorizontal: 8 },
   cTotal: { width: 95, textAlign: "right", paddingHorizontal: 8, fontWeight: 700 },
   totals: { marginTop: 12, marginLeft: "auto", width: 230 },
   totalRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 3, paddingHorizontal: 10 },
-  // Franja lima con texto verde oscuro, como el cierre de la web.
+  // Total en verde claro con texto verde oscuro.
   grandTotal: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -112,33 +110,33 @@ const s = StyleSheet.create({
     marginTop: 6,
     paddingVertical: 8,
     paddingHorizontal: 10,
-    backgroundColor: BRAND.halo,
+    backgroundColor: PALETTE.mintLight,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: BRAND.tinta,
+    borderColor: PALETTE.ink,
   },
   grandLabel: { fontFamily: DISPLAY, fontSize: 16, textTransform: "uppercase" },
   grandValue: { fontFamily: DISPLAY, fontSize: 18 },
-  validity: { marginTop: 8, textAlign: "right", fontSize: 9, color: BRAND.tintaSuave },
-  notes: { marginTop: 24, padding: 12, backgroundColor: BRAND.cielo, borderRadius: 6 },
-  // Pie verde oscuro con la frase en lima.
+  validity: { marginTop: 8, textAlign: "right", fontSize: 9, color: PALETTE.inkSoft },
+  notes: { marginTop: 24, padding: 12, backgroundColor: PALETTE.rowAlt, borderRadius: 6 },
+  // Pie verde oscuro.
   footer: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: BRAND.tinta,
+    backgroundColor: PALETTE.ink,
     paddingVertical: 14,
     paddingHorizontal: PAD,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  footerPhrase: { fontFamily: DISPLAY, fontSize: 13, color: BRAND.halo },
-  footerMeta: { fontSize: 8, color: BRAND.nube },
+  footerPhrase: { fontFamily: DISPLAY, fontSize: 13, color: PALETTE.mint },
+  footerMeta: { fontSize: 8, color: PALETTE.mintLight },
 });
 
-const RIBBON = [BRAND.lavanda, BRAND.halo, BRAND.menta, BRAND.amanecerFuerte];
+const RIBBON = [PALETTE.mint, PALETTE.lime, PALETTE.mintLight, PALETTE.inkSoft];
 
 const dateFmt = new Intl.DateTimeFormat("es-AR", { dateStyle: "long", timeZone: "UTC" });
 
@@ -228,7 +226,7 @@ export function QuotePdf({ q }: { q: QuotePdfData }) {
         </View>
 
         <View style={s.footer} fixed>
-          <Text style={s.footerPhrase}>{BRAND.frase}</Text>
+          <Text style={s.footerPhrase}>{PALETTE.closing}</Text>
           <Text style={s.footerMeta}>
             {q.business.name} · {formatQuoteNumber(q.number)} · Precios en pesos argentinos
           </Text>
