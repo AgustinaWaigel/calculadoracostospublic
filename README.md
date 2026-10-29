@@ -17,6 +17,12 @@ App web para emprendedores argentinos (imprenta, sublimación, laminado, manuali
 
 Next.js 15 (App Router) · TypeScript estricto · Tailwind CSS 4 + shadcn/ui · React Hook Form + Zod · Prisma + Postgres (Supabase) · Recharts · @react-pdf/renderer · decimal.js · Vitest.
 
+## Publicar en Vercel (todo desde la web)
+
+1. En [vercel.com](https://vercel.com) → **Add New → Project** → importá este repositorio de GitHub.
+2. Antes de **Deploy**, en **Environment Variables** cargá las 5 variables de abajo.
+3. **Deploy**. Al construir, `npm run build` crea o actualiza las tablas en Supabase (`prisma migrate deploy`), así que no hace falta correr nada a mano.
+
 ## Instalación
 
 Requisitos: Node.js 20 o superior.
