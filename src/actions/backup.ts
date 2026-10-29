@@ -32,6 +32,7 @@ const backupSchema = z.object({
     quoteItems: rows,
     // Opcional: los backups anteriores a la calculadora de impresión no la traen.
     printInks: rows.default([]),
+    investmentMovements: rows.default([]),
   }),
 });
 
@@ -57,6 +58,7 @@ const OWNED_TABLES = [
   "volumeTiers",
   "quotes",
   "printInks",
+  "investmentMovements",
 ] as const;
 // Valores de versiones anteriores (con Mercado Libre) que ya no existen.
 const OLD_PRICE_SOURCES = new Set(["MELI_SEARCH", "MELI_LINK", "MELI_REFRESH"]);
@@ -109,6 +111,7 @@ function adopt(d: z.infer<typeof backupSchema>["data"], userId: string) {
     quotes: map("quotes"),
     quoteItems: map("quoteItems"),
     printInks: map("printInks"),
+    investmentMovements: map("investmentMovements"),
   };
 }
 
@@ -145,6 +148,7 @@ export async function importBackup(json: string): Promise<ActionResult<{ counts:
         await tx.salesChannel.deleteMany({ where: mine });
         await tx.volumeTier.deleteMany({ where: mine });
         await tx.printInk.deleteMany({ where: mine });
+        await tx.investmentMovement.deleteMany({ where: mine });
         await tx.business.deleteMany({ where: { id: userId } });
 
         await tx.business.create({ data: as(rows.business) });
@@ -163,6 +167,7 @@ export async function importBackup(json: string): Promise<ActionResult<{ counts:
         await tx.quote.createMany({ data: as(rows.quotes) });
         await tx.quoteItem.createMany({ data: as(rows.quoteItems) });
         await tx.printInk.createMany({ data: as(rows.printInks) });
+        await tx.investmentMovement.createMany({ data: as(rows.investmentMovements) });
       },
       { timeout: 30_000 },
     );

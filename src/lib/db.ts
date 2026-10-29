@@ -28,6 +28,7 @@ const OWNED = new Set([
   "VolumeTier",
   "Quote",
   "PrintInk",
+  "InvestmentMovement",
 ]);
 
 /**

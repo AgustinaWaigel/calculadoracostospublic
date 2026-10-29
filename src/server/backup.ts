@@ -24,6 +24,7 @@ export async function exportAll() {
     quotes,
     quoteItems,
     printInks,
+    investmentMovements,
   ] = await Promise.all([
     db.business.findMany(),
     db.supply.findMany(),
@@ -41,6 +42,7 @@ export async function exportAll() {
     db.quote.findMany(),
     db.quoteItem.findMany(),
     db.printInk.findMany(),
+    db.investmentMovement.findMany(),
   ]);
   return plain({
     app: "calculadora-costos",
@@ -63,6 +65,7 @@ export async function exportAll() {
       quotes,
       quoteItems,
       printInks,
+      investmentMovements,
     },
   });
 }

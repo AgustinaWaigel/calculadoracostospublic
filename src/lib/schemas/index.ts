@@ -29,6 +29,7 @@ export const pricingModes = ["MARGIN", "MARKUP"] as const;
 export const taxConditions = ["MONOTRIBUTO", "RESPONSABLE_INSCRIPTO", "EXENTO"] as const;
 export const channelTypes = ["DIRECT", "WHOLESALE", "OTHER"] as const;
 export const quoteStatuses = ["DRAFT", "SENT", "ACCEPTED", "REJECTED", "EXPIRED"] as const;
+export const investmentKinds = ["INVESTMENT", "RECOVERY"] as const;
 
 export const FIXED_COST_LABELS: Record<(typeof fixedCostCategories)[number], string> = {
   ALQUILER: "Alquiler",
@@ -271,6 +272,17 @@ export const quoteSchema = z.object({
 });
 export type QuoteInput = z.input<typeof quoteSchema>;
 export type QuoteData = z.output<typeof quoteSchema>;
+
+// ───────── Inversiones ─────────
+
+export const investmentMovementSchema = z.object({
+  id: idField.optional(),
+  kind: z.enum(investmentKinds),
+  description: requiredText("La descripción", 120),
+  amount: decimalField({ min: 0, gt: true, label: "El monto" }),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida"),
+});
+export type InvestmentMovementInput = z.input<typeof investmentMovementSchema>;
 
 // ───────── Calculadora de impresión ─────────
 

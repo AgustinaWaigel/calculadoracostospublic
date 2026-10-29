@@ -25,6 +25,7 @@ describe.skipIf(!url)("cada cuenta ve solo lo suyo", () => {
     await raw.supply.deleteMany({ where });
     await raw.salesChannel.deleteMany({ where });
     await raw.volumeTier.deleteMany({ where });
+    await raw.investmentMovement.deleteMany({ where });
     await raw.business.deleteMany({ where: { id: { in: [A, B] } } });
   }
 
@@ -117,6 +118,15 @@ describe.skipIf(!url)("cada cuenta ve solo lo suyo", () => {
     });
     expect(number).toBe(1);
     expect(await a.quote.count()).toBe(0);
+  });
+
+  it("las inversiones son de cada cuenta", async () => {
+    const m = await a.investmentMovement.create({
+      data: { userId: A, kind: "INVESTMENT", description: "Plastificadora", amount: 120000, date: new Date() },
+    });
+    expect(await b.investmentMovement.count()).toBe(0);
+    await expect(b.investmentMovement.delete({ where: { id: m.id } })).rejects.toThrow();
+    expect(await a.investmentMovement.count()).toBe(1);
   });
 
   it("cada cuenta tiene su propio emprendimiento", async () => {

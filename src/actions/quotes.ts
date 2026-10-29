@@ -68,8 +68,19 @@ export async function setQuoteStatus(id: string, status: unknown): Promise<Actio
   const db = await userDb();
   const parsed = z.enum(quoteStatuses).safeParse(status);
   if (!parsed.success) return fail("Estado inválido");
-  await db.quote.update({ where: { id }, data: { status: parsed.data } });
+  const current = await db.quote.findUnique({ where: { id }, select: { status: true, acceptedAt: true } });
+  if (!current) return fail("No existe el presupuesto");
+  const accepted = parsed.data === "ACCEPTED";
+  await db.quote.update({
+    where: { id },
+    data: {
+      status: parsed.data,
+      // Si ya estaba aceptado, se queda con su fecha original.
+      acceptedAt: accepted ? (current.status === "ACCEPTED" && current.acceptedAt) || new Date() : null,
+    },
+  });
   revalidateQuotes(id);
+  revalidatePath("/inversiones");
   return ok(undefined, "Estado actualizado");
 }
 
