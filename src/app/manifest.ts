@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Calculadora de Costos",
-    short_name: "Costos",
-    description: "Costos de producción y precios de venta para emprendedores.",
+    name: "Calculadora de Insumos · Alas de Ángel",
+    short_name: "Insumos",
+    description: "Costos, precios y presupuestos para emprendedores. Una herramienta de Alas de Ángel.",
     lang: "es-AR",
     start_url: "/",
     scope: "/",

@@ -6,6 +6,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { ServiceWorkerRegister } from "@/components/layout/sw-register";
 import { getDolarRates } from "@/lib/dolar";
 import { getBusiness } from "@/server/costing";
+import { APP_NAME, OWNER } from "@/lib/brand";
 import { sessionUser } from "@/lib/auth/server";
 
 // Todo sale de la base de datos: nada se prerenderiza en el build.
@@ -16,10 +17,10 @@ const karla = Karla({ variable: "--font-karla", subsets: ["latin"] });
 const londrina = Londrina_Solid({ variable: "--font-londrina", subsets: ["latin"], weight: "400" });
 
 export const metadata: Metadata = {
-  title: { default: "Calculadora de Costos", template: "%s · Calculadora de Costos" },
-  description: "Calculá costos de producción y precios de venta para tu emprendimiento.",
-  applicationName: "Calculadora de Costos",
-  appleWebApp: { capable: true, title: "Costos", statusBarStyle: "default" },
+  title: { default: `${APP_NAME} · ${OWNER}`, template: `%s · ${APP_NAME}` },
+  description: `Calculá costos de producción, precios de venta y presupuestos para tu emprendimiento. Una herramienta de ${OWNER}.`,
+  applicationName: APP_NAME,
+  appleWebApp: { capable: true, title: "Insumos", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
@@ -37,7 +38,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <html lang="es-AR" suppressHydrationWarning className={`${karla.variable} ${londrina.variable}`}>
       <body className="antialiased">
         <Providers rates={rates}>
-          <AppShell businessName={business?.name ?? "Calculadora de Costos"} logoUrl={business?.logoUrl ?? null} userEmail={user?.email ?? null}>{children}</AppShell>
+          <AppShell businessName={business?.name ?? APP_NAME} logoUrl={business?.logoUrl ?? null} userEmail={user?.email ?? null}>{children}</AppShell>
         </Providers>
         <ServiceWorkerRegister />
       </body>

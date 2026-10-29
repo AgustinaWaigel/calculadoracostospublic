@@ -12,6 +12,7 @@ import { PUBLIC_PATHS } from "@/lib/auth/config";
 import { NAV_ITEMS, isActive } from "./nav-items";
 import { ThemeToggle } from "./theme-toggle";
 import { CurrencySwitcher } from "./currency-switcher";
+import { AlasCredit } from "./alas-credit";
 
 const AUTH_SCREENS = [...PUBLIC_PATHS, "/nueva-clave"];
 
@@ -109,6 +110,7 @@ export function AppShell({
         <NavLinks />
         <div className="mt-auto grid gap-4">
           <p className="px-3 font-display text-base leading-tight text-sidebar-primary">Para escribir, soñar y volar.</p>
+          <AlasCredit className="px-3 text-sidebar-foreground/75" linkClassName="hover:text-sidebar-foreground" />
           <Account email={userEmail} />
         </div>
       </aside>
@@ -127,7 +129,8 @@ export function AppShell({
                 <Brand name={businessName} logoUrl={logoUrl} />
               </SheetHeader>
               <NavLinks onNavigate={() => setOpen(false)} />
-              <div className="mt-auto">
+              <div className="mt-auto grid gap-4">
+                <AlasCredit className="px-3 text-sidebar-foreground/75" linkClassName="hover:text-sidebar-foreground" />
                 <Account email={userEmail} />
               </div>
             </SheetContent>
