@@ -112,6 +112,11 @@ export async function requestPasswordReset(_: AuthState, form: FormData): Promis
     ...captchaToken(form),
   });
   if (error && isCaptchaError(error)) return { email: rawEmail, error: CAPTCHA_FAILED };
+  if (error?.code === "over_email_send_rate_limit" || error?.code === "over_request_rate_limit") {
+    return { email: rawEmail, error: "Se pidieron muchos mails seguidos. Esperá un rato y probá de nuevo." };
+  }
+  // El resto no se le muestra (no revelamos qué mails tienen cuenta), pero queda en Vercel → Logs.
+  if (error) console.error("[recuperar]", error.code, error.status, error.message);
   // Mismo mensaje exista o no la cuenta: no revelamos qué mails están registrados.
   return { email: rawEmail, notice: "Si hay una cuenta con ese mail, te llega un link para elegir otra contraseña." };
 }
