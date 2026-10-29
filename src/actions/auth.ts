@@ -83,7 +83,15 @@ export async function signup(_: AuthState, form: FormData): Promise<AuthState> {
     }
     if (error.code === "user_already_exists") return { email: rawEmail, error: "Ya hay una cuenta con ese mail. Probá ingresar." };
     if (error.code === "weak_password") return { email: rawEmail, error: "Esa contraseña es muy fácil de adivinar. Probá otra." };
-    return { email: rawEmail, error: "No se pudo crear la cuenta. Probá de nuevo en un rato." };
+    if (error.code === "email_address_not_authorized") {
+      // El mail de prueba de Supabase solo escribe a los miembros del proyecto: falta un SMTP propio.
+      return { email: rawEmail, error: "Todavía no podemos mandar mails de confirmación a ese correo. Avisanos por WhatsApp." };
+    }
+    if (error.code === "email_address_invalid") return { email: rawEmail, error: "Ese mail no es válido. Revisalo." };
+    if (error.code === "signup_disabled") return { email: rawEmail, error: "El registro está cerrado por ahora." };
+    // Queda en los logs (Vercel → Logs) para ver el motivo; al usuario, el código para poder avisarlo.
+    console.error("[registro]", error.code, error.status, error.message);
+    return { email: rawEmail, error: `No se pudo crear la cuenta (${error.code ?? error.status ?? "error"}). Probá de nuevo en un rato.` };
   }
   // Con la confirmación por mail activada (lo normal) todavía no hay sesión.
   if (!data.session) {
