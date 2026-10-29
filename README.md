@@ -2,6 +2,8 @@
 
 Una herramienta de [Alas de Ángel](https://alasdeangel.com.ar) · WhatsApp 343 404-2410 · Instagram [@alasdeangel.papeleria](https://instagram.com/alasdeangel.papeleria)
 
+Desarrollado por Agustina Waigel.
+
 App web para emprendedores argentinos (imprenta, sublimación, laminado, manualidades…) que calcula **costos de producción** y **precios de venta** por canal, y arma **presupuestos**. Cada persona crea su cuenta y ve solo sus datos.
 
 - Insumos con costo por unidad, historial de precios y gráfico de evolución (ARS y USD).

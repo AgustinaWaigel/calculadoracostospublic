@@ -1,5 +1,5 @@
 import { GlobeIcon, AtSignIcon, MessageCircleIcon } from "lucide-react";
-import { CONTACTS, OWNER } from "@/lib/brand";
+import { CONTACTS, DEVELOPER, OWNER } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
@@ -31,6 +31,7 @@ export function AlasCredit({ className, linkClassName }: { className?: string; l
           </li>
         ))}
       </ul>
+      <p className="opacity-80">Desarrollado por {DEVELOPER}</p>
     </div>
   );
 }
