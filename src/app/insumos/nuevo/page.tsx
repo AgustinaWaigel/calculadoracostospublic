@@ -1,10 +1,11 @@
 import { PageHeader } from "@/components/shared/ui-bits";
 import { SupplyForm } from "@/components/supplies/supply-form";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/db";
 
 export const metadata = { title: "Nuevo insumo" };
 
 export default async function NuevoInsumoPage() {
+  const db = await userDb();
   const categories = await db.supply.findMany({
     where: { category: { not: null } },
     distinct: ["category"],

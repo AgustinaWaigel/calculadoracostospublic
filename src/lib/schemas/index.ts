@@ -14,7 +14,7 @@ export * from "./common";
 // ───────── Enums compartidos (espejo de Prisma) ─────────
 
 export const supplyKinds = ["MATERIAL", "SERVICE"] as const;
-export const priceSources = ["MANUAL", "MELI_SEARCH", "MELI_LINK", "MELI_REFRESH", "IMPORT"] as const;
+export const priceSources = ["MANUAL", "IMPORT"] as const;
 export const fixedCostCategories = [
   "ALQUILER",
   "SERVICIOS",
@@ -26,7 +26,7 @@ export const fixedCostCategories = [
 export const lifeUnits = ["UNITS", "HOURS"] as const;
 export const pricingModes = ["MARGIN", "MARKUP"] as const;
 export const taxConditions = ["MONOTRIBUTO", "RESPONSABLE_INSCRIPTO", "EXENTO"] as const;
-export const channelTypes = ["DIRECT", "MELI_CLASSIC", "MELI_PREMIUM", "WHOLESALE", "OTHER"] as const;
+export const channelTypes = ["DIRECT", "WHOLESALE", "OTHER"] as const;
 export const quoteStatuses = ["DRAFT", "SENT", "ACCEPTED", "REJECTED", "EXPIRED"] as const;
 
 export const FIXED_COST_LABELS: Record<(typeof fixedCostCategories)[number], string> = {
@@ -46,8 +46,6 @@ export const TAX_LABELS: Record<(typeof taxConditions)[number], string> = {
 
 export const CHANNEL_LABELS: Record<(typeof channelTypes)[number], string> = {
   DIRECT: "Venta directa",
-  MELI_CLASSIC: "Mercado Libre Clásica",
-  MELI_PREMIUM: "Mercado Libre Premium",
   WHOLESALE: "Mayorista",
   OTHER: "Otro",
 };
@@ -62,9 +60,6 @@ export const QUOTE_STATUS_LABELS: Record<(typeof quoteStatuses)[number], string>
 
 export const PRICE_SOURCE_LABELS: Record<(typeof priceSources)[number], string> = {
   MANUAL: "Manual",
-  MELI_SEARCH: "Búsqueda ML",
-  MELI_LINK: "Link ML",
-  MELI_REFRESH: "Actualizado de ML",
   IMPORT: "Importado",
 };
 
@@ -81,7 +76,6 @@ export const supplySchema = z.object({
   packPrice: decimalField({ min: 0, label: "El precio" }),
   supplier: optionalText(120),
   url: optionalUrl,
-  meliItemId: optionalText(30),
   priceSource: z.enum(priceSources).default("MANUAL"),
 });
 export type SupplyInput = z.input<typeof supplySchema>;
@@ -310,22 +304,3 @@ export const printAsSupplySchema = z.object({
   name: requiredText("El nombre", 120),
   costPerSheet: decimalField({ min: 0, label: "El costo" }),
 });
-
-// ───────── Mercado Libre (datos de la app) ─────────
-
-export const meliAppConfigSchema = z.object({
-  clientId: z
-    .string()
-    .trim()
-    .regex(/^\d{4,25}$/, "El App ID son solo números (lo ves arriba de todo en tu app de ML)"),
-  clientSecret: z
-    .string()
-    .trim()
-    .min(10, "Pegá la Secret Key completa")
-    .regex(/^[A-Za-z0-9]+$/, "La Secret Key son solo letras y números (no es una URL); está en tu app de ML"),
-  redirectUri: z
-    .string()
-    .trim()
-    .regex(/^https:\/\/\S+\/api\/meli\/callback$/, "Tiene que ser https://…/api/meli/callback"),
-});
-export type MeliAppConfigInput = z.input<typeof meliAppConfigSchema>;

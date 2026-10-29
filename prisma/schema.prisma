@@ -1,4 +1,6 @@
 // Montos y cantidades en Decimal → sin floats. Base: Postgres en Supabase.
+// Multiusuario: cada fila es de una cuenta de Supabase Auth (`userId` = auth.users.id).
+// Las tablas hijas (recetas, ítems, historial) cuelgan de una fila que ya tiene dueño.
 
 generator client {
   provider = "prisma-client-js"
@@ -12,8 +14,9 @@ datasource db {
 
 // ───────── Emprendimiento y configuración ─────────
 
+/// Uno por cuenta: el id es el de la cuenta (auth.users.id).
 model Business {
-  id                   String          @id @default("singleton")
+  id                   String          @id
   name                 String
   logoUrl              String?
   phone                String?
@@ -54,6 +57,7 @@ enum PricingMode {
 
 model Supply {
   id             String               @id @default(cuid())
+  userId         String
   name           String
   kind           SupplyKind           @default(MATERIAL)
   category       String?
@@ -63,13 +67,13 @@ model Supply {
   packPrice      Decimal
   supplier       String?
   url            String?
-  meliItemId     String?
   priceUpdatedAt DateTime             @default(now())
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
   priceHistory   SupplyPriceHistory[]
   usedIn         ProductSupply[]
 
+  @@index([userId])
   @@index([category])
 }
 
@@ -93,9 +97,6 @@ model SupplyPriceHistory {
 
 enum PriceSource {
   MANUAL
-  MELI_SEARCH
-  MELI_LINK
-  MELI_REFRESH
   IMPORT
 }
 
@@ -103,6 +104,7 @@ enum PriceSource {
 
 model LaborProfile {
   id         String         @id @default(cuid())
+  userId     String
   name       String
   hourlyRate Decimal
   /// true = lo hace el dueño (es ganancia suya); false = se le paga a otra persona (es costo).
@@ -111,25 +113,33 @@ model LaborProfile {
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
   usedIn     ProductLabor[]
+
+  @@index([userId])
 }
 
 model MarketRate {
   id         String   @id @default(cuid())
+  userId     String
   label      String
   hourlyRate Decimal
   source     String?
   createdAt  DateTime @default(now())
+
+  @@index([userId])
 }
 
 // ───────── Costos fijos y máquinas ─────────
 
 model FixedCost {
   id            String            @id @default(cuid())
+  userId        String
   name          String
   category      FixedCostCategory @default(OTROS)
   monthlyAmount Decimal
   active        Boolean           @default(true)
   createdAt     DateTime          @default(now())
+
+  @@index([userId])
 }
 
 enum FixedCostCategory {
@@ -143,12 +153,15 @@ enum FixedCostCategory {
 
 model Machine {
   id         String           @id @default(cuid())
+  userId     String
   name       String
   price      Decimal
   usefulLife Decimal
   lifeUnit   LifeUnit
   createdAt  DateTime         @default(now())
   usedIn     ProductMachine[]
+
+  @@index([userId])
 }
 
 enum LifeUnit {
@@ -160,6 +173,7 @@ enum LifeUnit {
 
 model Product {
   id                String           @id @default(cuid())
+  userId            String
   name              String
   description       String?
   category          String?
@@ -177,6 +191,8 @@ model Product {
   labor             ProductLabor[]
   machines          ProductMachine[]
   quoteItems        QuoteItem[]
+
+  @@index([userId])
 }
 
 model ProductSupply {
@@ -216,6 +232,7 @@ model ProductMachine {
 
 model SalesChannel {
   id                  String      @id @default(cuid())
+  userId              String
   name                String
   type                ChannelType @default(OTHER)
   commissionPercent   Decimal     @default(0)
@@ -227,27 +244,31 @@ model SalesChannel {
   applyIva            Boolean     @default(true)
   active              Boolean     @default(true)
   sortOrder           Int         @default(0)
+
+  @@index([userId])
 }
 
 enum ChannelType {
   DIRECT
-  MELI_CLASSIC
-  MELI_PREMIUM
   WHOLESALE
   OTHER
 }
 
 model VolumeTier {
   id              String  @id @default(cuid())
-  minQuantity     Int     @unique
+  userId          String
+  minQuantity     Int
   discountPercent Decimal
+
+  @@unique([userId, minQuantity])
 }
 
 // ───────── Presupuestos ─────────
 
 model Quote {
   id              String      @id @default(cuid())
-  number          Int         @unique
+  userId          String
+  number          Int
   clientName      String
   clientPhone     String?
   clientEmail     String?
@@ -260,6 +281,8 @@ model Quote {
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   items           QuoteItem[]
+
+  @@unique([userId, number])
 }
 
 enum QuoteStatus {
@@ -282,37 +305,11 @@ model QuoteItem {
   sortOrder   Int      @default(0)
 }
 
-// ───────── Mercado Libre (solo servidor) ─────────
-
-model MeliToken {
-  id           String   @id @default("singleton")
-  meliUserId   String
-  nickname     String?
-  accessToken  String
-  refreshToken String
-  expiresAt    DateTime
-  updatedAt    DateTime @updatedAt
-}
-
-model MeliCache {
-  key       String   @id
-  payload   String
-  expiresAt DateTime
-
-  @@index([expiresAt])
-}
-
-// Estado OAuth (anti-CSRF) mientras el usuario autoriza en ML.
-model MeliOAuthState {
-  state     String   @id
-  verifier  String
-  createdAt DateTime @default(now())
-}
-
 // ───────── Calculadora de impresión ─────────
 
 model PrintInk {
   id          String   @id @default(cuid())
+  userId      String
   name        String
   channel     String   @default("OTRO") // K, C, M, Y, LC, LM, OTRO
   color       String   @default("#999999")
@@ -321,13 +318,6 @@ model PrintInk {
   yieldPages  Int
   sortOrder   Int      @default(0)
   updatedAt   DateTime @updatedAt
-}
 
-// Datos de la app de Mercado Libre cargados desde Ajustes (alternativa al .env).
-model MeliAppConfig {
-  id           String   @id @default("singleton")
-  clientId     String
-  clientSecret String
-  redirectUri  String
-  updatedAt    DateTime @updatedAt
+  @@index([userId])
 }

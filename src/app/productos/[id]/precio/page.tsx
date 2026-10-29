@@ -9,15 +9,15 @@ import { InfoTooltip, StatCard } from "@/components/shared/ui-bits";
 import { Money } from "@/components/shared/money";
 import { MarginTooltip } from "@/components/products/margin-tooltip";
 import { PriceSimulator } from "@/components/products/price-simulator";
-import { CompareMeliButton } from "@/components/products/compare-meli-button";
 import { costProduct, getCostingContext, priceProduct, productInclude } from "@/server/costing";
 import { contextToPlain } from "@/server/editor-options";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/db";
 import { formatNumber, formatPercent } from "@/lib/money";
 
 export const metadata = { title: "Precio de venta" };
 
 export default async function PrecioPage({ params }: { params: Promise<{ id: string }> }) {
+  const db = await userDb();
   const { id } = await params;
   const [product, ctx] = await Promise.all([
     db.product.findUnique({ where: { id }, include: productInclude }),
@@ -39,7 +39,6 @@ export default async function PrecioPage({ params }: { params: Promise<{ id: str
     );
   }
   const plainCtx = contextToPlain(ctx);
-  const meli = pricing.channels.find((c) => c.ok && c.type?.startsWith("MELI"));
   const isRI = ctx.business.taxCondition === "RESPONSABLE_INSCRIPTO";
 
   return (
@@ -161,12 +160,6 @@ export default async function PrecioPage({ params }: { params: Promise<{ id: str
               )}
             </TableBody>
           </Table>
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <CompareMeliButton
-              query={product.name}
-              myPrice={(meli?.ok ? meli.price : pricing.reference?.price)?.toString() ?? null}
-            />
-          </div>
         </CardContent>
       </Card>
 

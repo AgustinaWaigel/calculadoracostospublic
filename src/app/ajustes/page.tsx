@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { PencilIcon, PlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,32 +7,27 @@ import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { BusinessForm } from "@/components/settings/business-form";
 import { ChannelDialog } from "@/components/settings/channel-dialog";
 import { VolumeTiersForm } from "@/components/settings/volume-tiers-form";
-import { MeliConnection } from "@/components/settings/meli-connection";
 import { BackupCard } from "@/components/settings/backup-card";
 import { deleteChannel } from "@/actions/settings";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/db";
 import { getBusiness } from "@/server/costing";
-import { getMeliStatus } from "@/lib/meli/oauth";
 import { formatMoney, formatPercent, toInputString } from "@/lib/money";
 import { CHANNEL_LABELS } from "@/lib/schemas";
 
 export const metadata = { title: "Ajustes" };
 
 export default async function AjustesPage() {
-  const [business, channels, tiers, meliStatus] = await Promise.all([
+  const db = await userDb();
+  const [business, channels, tiers] = await Promise.all([
     getBusiness(),
     db.salesChannel.findMany({ orderBy: { sortOrder: "asc" } }),
     db.volumeTier.findMany({ orderBy: { minQuantity: "asc" } }),
-    getMeliStatus(),
   ]);
 
   return (
     <>
       <PageHeader title="Ajustes" />
       <div className="grid gap-6">
-        <Suspense>
-          <MeliConnection status={meliStatus} />
-        </Suspense>
         <BusinessForm
           defaults={{
             name: business.name,

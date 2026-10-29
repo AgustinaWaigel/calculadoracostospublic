@@ -43,7 +43,7 @@ export function QuickCalculator({ compact = false }: { compact?: boolean }) {
 
   let total = null;
   let price = null;
-  let mlPrice = null;
+  let commissionPrice = null;
   try {
     const cost = computeProductCost({
       supplies: lines.flatMap((l) => {
@@ -58,10 +58,10 @@ export function QuickCalculator({ compact = false }: { compact?: boolean }) {
     total = cost.total;
     const m = n(margin) ?? 0;
     price = priceFromCost(cost.total, m, "MARGIN");
-    mlPrice = channelPrice({
+    commissionPrice = channelPrice({
       unitCost: cost.total,
       targetProfit: price.minus(cost.total),
-      channel: { name: "ML", commissionPercent: n(commission) ?? 0 },
+      channel: { name: "Con comisión", commissionPercent: n(commission) ?? 0 },
       taxCondition: "MONOTRIBUTO" }).price;
   } catch {
     // Datos incompletos o margen >= 100%: no mostramos precio.
@@ -151,7 +151,7 @@ export function QuickCalculator({ compact = false }: { compact?: boolean }) {
             <Field label={<span className="flex items-center gap-1">Margen % <MarginTooltip /></span>} htmlFor="qc-margin">
               <Input id="qc-margin" inputMode="decimal" value={margin} onChange={(e) => setMargin(e.target.value)} />
             </Field>
-            <Field label="Comisión ML %" htmlFor="qc-comm">
+            <Field label="Comisión de la plataforma %" htmlFor="qc-comm">
               <Input id="qc-comm" inputMode="decimal" value={commission} onChange={(e) => setCommission(e.target.value)} />
             </Field>
           </div>
@@ -160,8 +160,8 @@ export function QuickCalculator({ compact = false }: { compact?: boolean }) {
             <span className="text-xl font-semibold text-primary">{price ? <Money value={price.toString()} /> : "—"}</span>
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-sm text-muted-foreground">En Mercado Libre</span>
-            <span className="font-semibold">{mlPrice ? <Money value={mlPrice.toString()} /> : "—"}</span>
+            <span className="text-sm text-muted-foreground">Con comisión</span>
+            <span className="font-semibold">{commissionPrice ? <Money value={commissionPrice.toString()} /> : "—"}</span>
           </div>
         </div>
       </CardContent>

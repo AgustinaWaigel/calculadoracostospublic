@@ -18,7 +18,7 @@ import { DolarCard } from "@/components/dashboard/dolar-card";
 import { ProfitChart } from "@/components/dashboard/profit-chart";
 import { ACCENTS, type Accent } from "@/components/layout/nav-items";
 import { getAllProductsWithPricing } from "@/server/costing";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/db";
 import { average } from "@/lib/calc/stats";
 import { daysSince, isPriceStale, priceIncrease, supplyUnitCost } from "@/lib/calc/supply";
 import { formatPercent } from "@/lib/money";
@@ -35,6 +35,7 @@ const QUICK_ACTIONS: { href: string; label: string; icon: LucideIcon; accent: Ac
 ];
 
 export default async function DashboardPage() {
+  const db = await userDb();
   const since = new Date(Date.now() - WINDOW_DAYS * 86_400_000);
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   const [{ items }, supplies, quotesThisMonth] = await Promise.all([

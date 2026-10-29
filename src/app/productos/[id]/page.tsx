@@ -2,11 +2,12 @@ import { notFound } from "next/navigation";
 import { ProductEditor } from "@/components/products/product-editor";
 import { getEditorOptions } from "@/server/editor-options";
 import { productInclude } from "@/server/costing";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/db";
 
 export const metadata = { title: "Producto" };
 
 export default async function ProductoPage({ params }: { params: Promise<{ id: string }> }) {
+  const db = await userDb();
   const { id } = await params;
   const [product, options] = await Promise.all([
     db.product.findUnique({ where: { id }, include: productInclude }),

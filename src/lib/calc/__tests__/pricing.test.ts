@@ -34,11 +34,11 @@ describe("precio por canal", () => {
     expect(r.netProfit.toString()).toBe("500");
   });
 
-  it("Mercado Libre mantiene la ganancia neta después de la comisión", () => {
+  it("una plataforma con comisión mantiene la ganancia neta después de la comisión", () => {
     const r = channelPrice({
       unitCost: 1000,
       targetProfit: 500,
-      channel: { name: "ML Clásica", commissionPercent: 14, fixedFee: 1000, shippingCost: 0 },
+      channel: { name: "Tienda online", commissionPercent: 14, fixedFee: 1000, shippingCost: 0 },
       taxCondition: "MONOTRIBUTO",
     });
     // (1000 + 500 + 1000) / 0.86
@@ -50,7 +50,7 @@ describe("precio por canal", () => {
     const r = channelPrice({
       unitCost: 1000,
       targetProfit: 500,
-      channel: { name: "ML Premium", commissionPercent: 10 },
+      channel: { name: "Plataforma", commissionPercent: 10 },
       taxCondition: "RESPONSABLE_INSCRIPTO",
       ivaPercent: 21,
     });

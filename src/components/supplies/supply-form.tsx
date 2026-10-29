@@ -3,24 +3,18 @@
 import { useRouter } from "next/navigation";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LinkIcon, Loader2Icon, SaveIcon, SearchIcon, StoreIcon } from "lucide-react";
-import { toast } from "sonner";
+import { Loader2Icon, SaveIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Field } from "@/components/shared/ui-bits";
 import { Money } from "@/components/shared/money";
 import { useAction } from "@/components/shared/use-action";
-import { MeliSearchDialog } from "@/components/meli/meli-search-dialog";
-import { MeliLinkInput } from "@/components/meli/meli-link-input";
 import { saveSupply } from "@/actions/supplies";
 import { supplySchema, type SupplyData, type SupplyInput } from "@/lib/schemas";
 import { supplyUnitCost } from "@/lib/calc/supply";
 import { parseMoneyInput, toInputString } from "@/lib/money";
-import { guessPackQuantity } from "@/lib/meli/guess";
-import type { MeliListing } from "@/lib/meli/types";
 
 const PURCHASE_UNITS = ["paquete", "rollo", "resma", "caja", "hoja", "unidad", "litro", "kg", "metro"];
 
@@ -35,7 +29,6 @@ export interface SupplyFormDefaults {
   packPrice: string;
   supplier: string | null;
   url: string | null;
-  meliItemId: string | null;
 }
 
 export function SupplyForm({ defaults, categories }: { defaults?: SupplyFormDefaults; categories: string[] }) {
@@ -53,34 +46,19 @@ export function SupplyForm({ defaults, categories }: { defaults?: SupplyFormDefa
       packPrice: toInputString(defaults?.packPrice ?? ""),
       supplier: defaults?.supplier ?? "",
       url: defaults?.url ?? "",
-      meliItemId: defaults?.meliItemId ?? "",
-      priceSource: "MANUAL" } });
-  const { register, control, formState, setValue, getValues, setError } = form;
+      priceSource: "MANUAL",
+    },
+  });
+  const { register, control, formState, getValues, setError } = form;
   const { pending, run } = useAction<SupplyInput>(setError);
 
-  const [packPrice, packQuantity, usageUnit, name] = useWatch({
+  const [packPrice, packQuantity, usageUnit] = useWatch({
     control,
-    name: ["packPrice", "packQuantity", "usageUnit", "name"],
+    name: ["packPrice", "packQuantity", "usageUnit"],
   });
   const price = parseMoneyInput(String(packPrice ?? ""));
   const qty = parseMoneyInput(String(packQuantity ?? ""));
   const unitCost = price && qty && qty.gt(0) ? supplyUnitCost({ packPrice: price, packQuantity: qty }) : null;
-
-  function applyListing(listing: MeliListing, source: "MELI_SEARCH" | "MELI_LINK", url?: string) {
-    setValue("packPrice", toInputString(listing.price), { shouldDirty: true, shouldValidate: true });
-    setValue("priceSource", source);
-    setValue("meliItemId", listing.id, { shouldDirty: true });
-    setValue("url", url ?? listing.permalink ?? "", { shouldDirty: true });
-    if (!getValues("name")) setValue("name", listing.title.slice(0, 120), { shouldDirty: true });
-    if (!getValues("supplier") && listing.seller) setValue("supplier", listing.seller, { shouldDirty: true });
-    const guessed = guessPackQuantity(listing.title);
-    if (guessed) {
-      setValue("packQuantity", String(guessed), { shouldDirty: true, shouldValidate: true });
-      toast.info(`Usamos el precio de ML. Detectamos ${guessed} unidades por paquete: revisalo.`);
-    } else {
-      toast.info("Usamos el precio de ML. Revisá la cantidad por paquete.");
-    }
-  }
 
   const onSubmit = form.handleSubmit(() => {
     // Mandamos lo tipeado (no lo transformado): el servidor valida con el mismo schema.
@@ -145,36 +123,7 @@ export function SupplyForm({ defaults, categories }: { defaults?: SupplyFormDefa
             <CardTitle>Precio</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
-            <Tabs defaultValue="manual">
-              <TabsList className="w-full sm:w-auto">
-                <TabsTrigger value="manual">Manual</TabsTrigger>
-                <TabsTrigger value="search">
-                  <SearchIcon /> Buscar en ML
-                </TabsTrigger>
-                <TabsTrigger value="link">
-                  <LinkIcon /> Link de ML
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="manual" className="pt-2 text-sm text-muted-foreground">
-                Completá el precio del paquete y cuántas unidades trae.
-              </TabsContent>
-              <TabsContent value="search" className="pt-2">
-                <MeliSearchDialog
-                  defaultQuery={name ?? ""}
-                  myPrice={price?.toString()}
-                  myPriceLabel="Tu precio del paquete"
-                  onPick={(l) => applyListing(l, "MELI_SEARCH")}
-                  trigger={
-                    <Button type="button" variant="secondary">
-                      <StoreIcon /> Buscar “{name || "insumo"}” en Mercado Libre
-                    </Button>
-                  }
-                />
-              </TabsContent>
-              <TabsContent value="link" className="pt-2">
-                <MeliLinkInput onResult={(l, url) => applyListing(l, "MELI_LINK", url)} />
-              </TabsContent>
-            </Tabs>
+            <p className="text-sm text-muted-foreground">Completá el precio del paquete y cuántas unidades trae.</p>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Precio del paquete" htmlFor="packPrice" error={errors.packPrice?.message}>

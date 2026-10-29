@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { EmptyState, PageHeader } from "@/components/shared/ui-bits";
 import { Money } from "@/components/shared/money";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/db";
 import { quoteTotals } from "@/lib/calc/quote";
 import { formatQuoteNumber } from "@/lib/quote-text";
 import { QUOTE_STATUS_LABELS } from "@/lib/schemas";
@@ -23,6 +23,7 @@ const STATUS_VARIANT = {
 } as const;
 
 export default async function PresupuestosPage() {
+  const db = await userDb();
   const quotes = await db.quote.findMany({ orderBy: { number: "desc" }, include: { items: true } });
   const now = Date.now();
 

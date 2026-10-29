@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { exportAll } from "@/server/backup";
 import { getAllProductsWithPricing } from "@/server/costing";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/db";
 import { toCsv } from "@/lib/csv";
 import { supplyUnitCost } from "@/lib/calc/supply";
 import { roundCents } from "@/lib/money";
@@ -24,6 +24,7 @@ function download(body: string, filename: string, type: string) {
  * GET /api/backup?format=csv&table=productos   → productos con costo y precio
  */
 export async function GET(request: NextRequest) {
+  const db = await userDb();
   const format = request.nextUrl.searchParams.get("format") ?? "json";
   const table = request.nextUrl.searchParams.get("table") ?? "insumos";
 

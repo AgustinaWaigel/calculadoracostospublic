@@ -1,22 +1,18 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { AUTH_KEY, AUTH_URL, authConfigured } from "@/lib/auth/config";
-
-const LOGIN = "/ingresar";
+import { AUTH_KEY, AUTH_URL, LOGIN_PATH, PUBLIC_PATHS, authConfigured } from "@/lib/auth/config";
 
 /**
- * La puerta de toda la app: hace falta haber iniciado sesión con una cuenta que figure en `admins`
- * del panel de la web. También renueva la sesión (las cookies vencen).
+ * La puerta de toda la app: hace falta haber iniciado sesión (cualquier cuenta registrada; cada
+ * una ve solo sus datos). También renueva la sesión (las cookies vencen).
  */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const onLogin = pathname === LOGIN;
+  const isPublic = PUBLIC_PATHS.includes(pathname);
+  // Los links de los mails (confirmar cuenta, recuperar clave) llegan sin sesión.
+  if (pathname.startsWith("/auth/")) return NextResponse.next();
 
-  if (!authConfigured) {
-    // En desarrollo se puede trabajar sin configurar el ingreso; publicada, no se abre sin él.
-    if (process.env.NODE_ENV !== "production" || onLogin) return NextResponse.next();
-    return deny(request, "config");
-  }
+  if (!authConfigured) return isPublic ? NextResponse.next() : deny(request, "config");
 
   let response = NextResponse.next({ request });
   const supabase = createServerClient(AUTH_URL, AUTH_KEY, {
@@ -31,26 +27,19 @@ export async function middleware(request: NextRequest) {
   });
 
   const { data } = await supabase.auth.getClaims();
-  if (!data?.claims) return onLogin ? response : deny(request);
+  if (!data?.claims) return isPublic ? response : deny(request);
 
-  const { data: isAdmin } = await supabase.rpc("es_admin");
-  if (!isAdmin) {
-    // La cuenta existe pero no es del panel (o la sacaron de `admins`): afuera.
-    await supabase.auth.signOut();
-    return onLogin ? response : deny(request, "permiso");
-  }
-
-  // Con sesión no tiene sentido ver el formulario de ingreso.
-  if (onLogin) return NextResponse.redirect(new URL("/", request.url));
+  // Con sesión no tiene sentido ver el ingreso ni el registro.
+  if (isPublic) return NextResponse.redirect(new URL("/", request.url));
   return response;
 }
 
-function deny(request: NextRequest, reason?: "permiso" | "config") {
+function deny(request: NextRequest, reason?: "config") {
   // A las rutas de datos no se las redirige: responden 401 para que se vea el motivo.
   if (request.nextUrl.pathname.startsWith("/api/")) {
     return NextResponse.json({ error: "Tenés que iniciar sesión." }, { status: 401 });
   }
-  const url = new URL(LOGIN, request.url);
+  const url = new URL(LOGIN_PATH, request.url);
   const back = request.nextUrl.pathname + request.nextUrl.search;
   if (back !== "/") url.searchParams.set("volver", back);
   if (reason) url.searchParams.set("motivo", reason);

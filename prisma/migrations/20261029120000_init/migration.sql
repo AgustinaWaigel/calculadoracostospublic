@@ -1,5 +1,11 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
 -- CreateEnum
 CREATE TYPE "TaxCondition" AS ENUM ('MONOTRIBUTO', 'RESPONSABLE_INSCRIPTO', 'EXENTO');
+
+-- CreateEnum
+CREATE TYPE "FixedAllocation" AS ENUM ('SIZE', 'TIME');
 
 -- CreateEnum
 CREATE TYPE "PricingMode" AS ENUM ('MARGIN', 'MARKUP');
@@ -8,7 +14,7 @@ CREATE TYPE "PricingMode" AS ENUM ('MARGIN', 'MARKUP');
 CREATE TYPE "SupplyKind" AS ENUM ('MATERIAL', 'SERVICE');
 
 -- CreateEnum
-CREATE TYPE "PriceSource" AS ENUM ('MANUAL', 'MELI_SEARCH', 'MELI_LINK', 'MELI_REFRESH', 'IMPORT');
+CREATE TYPE "PriceSource" AS ENUM ('MANUAL', 'IMPORT');
 
 -- CreateEnum
 CREATE TYPE "FixedCostCategory" AS ENUM ('ALQUILER', 'SERVICIOS', 'INTERNET', 'IMPUESTOS', 'SUSCRIPCIONES', 'OTROS');
@@ -17,14 +23,14 @@ CREATE TYPE "FixedCostCategory" AS ENUM ('ALQUILER', 'SERVICIOS', 'INTERNET', 'I
 CREATE TYPE "LifeUnit" AS ENUM ('UNITS', 'HOURS');
 
 -- CreateEnum
-CREATE TYPE "ChannelType" AS ENUM ('DIRECT', 'MELI_CLASSIC', 'MELI_PREMIUM', 'WHOLESALE', 'OTHER');
+CREATE TYPE "ChannelType" AS ENUM ('DIRECT', 'WHOLESALE', 'OTHER');
 
 -- CreateEnum
 CREATE TYPE "QuoteStatus" AS ENUM ('DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED');
 
 -- CreateTable
 CREATE TABLE "Business" (
-    "id" TEXT NOT NULL DEFAULT 'singleton',
+    "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "logoUrl" TEXT,
     "phone" TEXT,
@@ -34,6 +40,8 @@ CREATE TABLE "Business" (
     "taxCondition" "TaxCondition" NOT NULL DEFAULT 'MONOTRIBUTO',
     "ivaPercent" DECIMAL(65,30) NOT NULL DEFAULT 21,
     "monthlyUnitsEstimate" INTEGER NOT NULL DEFAULT 100,
+    "fixedAllocation" "FixedAllocation" NOT NULL DEFAULT 'SIZE',
+    "monthlyHoursEstimate" INTEGER NOT NULL DEFAULT 80,
     "defaultMarginPercent" DECIMAL(65,30) NOT NULL DEFAULT 40,
     "pricingMode" "PricingMode" NOT NULL DEFAULT 'MARGIN',
     "roundTo" DECIMAL(65,30) NOT NULL DEFAULT 10,
@@ -47,6 +55,7 @@ CREATE TABLE "Business" (
 -- CreateTable
 CREATE TABLE "Supply" (
     "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "kind" "SupplyKind" NOT NULL DEFAULT 'MATERIAL',
     "category" TEXT,
@@ -56,7 +65,6 @@ CREATE TABLE "Supply" (
     "packPrice" DECIMAL(65,30) NOT NULL,
     "supplier" TEXT,
     "url" TEXT,
-    "meliItemId" TEXT,
     "priceUpdatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -80,8 +88,10 @@ CREATE TABLE "SupplyPriceHistory" (
 -- CreateTable
 CREATE TABLE "LaborProfile" (
     "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "hourlyRate" DECIMAL(65,30) NOT NULL,
+    "isOwn" BOOLEAN NOT NULL DEFAULT true,
     "color" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -92,6 +102,7 @@ CREATE TABLE "LaborProfile" (
 -- CreateTable
 CREATE TABLE "MarketRate" (
     "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
     "label" TEXT NOT NULL,
     "hourlyRate" DECIMAL(65,30) NOT NULL,
     "source" TEXT,
@@ -103,6 +114,7 @@ CREATE TABLE "MarketRate" (
 -- CreateTable
 CREATE TABLE "FixedCost" (
     "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "category" "FixedCostCategory" NOT NULL DEFAULT 'OTROS',
     "monthlyAmount" DECIMAL(65,30) NOT NULL,
@@ -115,6 +127,7 @@ CREATE TABLE "FixedCost" (
 -- CreateTable
 CREATE TABLE "Machine" (
     "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "price" DECIMAL(65,30) NOT NULL,
     "usefulLife" DECIMAL(65,30) NOT NULL,
@@ -127,12 +140,14 @@ CREATE TABLE "Machine" (
 -- CreateTable
 CREATE TABLE "Product" (
     "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
     "category" TEXT,
     "batchYield" DECIMAL(65,30) NOT NULL DEFAULT 1,
     "wastePercent" DECIMAL(65,30) NOT NULL DEFAULT 0,
     "includeFixedCosts" BOOLEAN NOT NULL DEFAULT true,
+    "fixedWeight" DECIMAL(65,30) NOT NULL DEFAULT 1,
     "marginPercent" DECIMAL(65,30),
     "pricingMode" "PricingMode",
     "duplicatedFromId" TEXT,
@@ -175,6 +190,7 @@ CREATE TABLE "ProductMachine" (
 -- CreateTable
 CREATE TABLE "SalesChannel" (
     "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "type" "ChannelType" NOT NULL DEFAULT 'OTHER',
     "commissionPercent" DECIMAL(65,30) NOT NULL DEFAULT 0,
@@ -193,6 +209,7 @@ CREATE TABLE "SalesChannel" (
 -- CreateTable
 CREATE TABLE "VolumeTier" (
     "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
     "minQuantity" INTEGER NOT NULL,
     "discountPercent" DECIMAL(65,30) NOT NULL,
 
@@ -202,6 +219,7 @@ CREATE TABLE "VolumeTier" (
 -- CreateTable
 CREATE TABLE "Quote" (
     "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
     "number" INTEGER NOT NULL,
     "clientName" TEXT NOT NULL,
     "clientPhone" TEXT,
@@ -210,6 +228,7 @@ CREATE TABLE "Quote" (
     "validUntil" TIMESTAMP(3) NOT NULL,
     "status" "QuoteStatus" NOT NULL DEFAULT 'DRAFT',
     "discountPercent" DECIMAL(65,30) NOT NULL DEFAULT 0,
+    "volumeTiers" JSONB NOT NULL DEFAULT '[]',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -230,39 +249,9 @@ CREATE TABLE "QuoteItem" (
 );
 
 -- CreateTable
-CREATE TABLE "MeliToken" (
-    "id" TEXT NOT NULL DEFAULT 'singleton',
-    "meliUserId" TEXT NOT NULL,
-    "nickname" TEXT,
-    "accessToken" TEXT NOT NULL,
-    "refreshToken" TEXT NOT NULL,
-    "expiresAt" TIMESTAMP(3) NOT NULL,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "MeliToken_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "MeliCache" (
-    "key" TEXT NOT NULL,
-    "payload" TEXT NOT NULL,
-    "expiresAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "MeliCache_pkey" PRIMARY KEY ("key")
-);
-
--- CreateTable
-CREATE TABLE "MeliOAuthState" (
-    "state" TEXT NOT NULL,
-    "verifier" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "MeliOAuthState_pkey" PRIMARY KEY ("state")
-);
-
--- CreateTable
 CREATE TABLE "PrintInk" (
     "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "channel" TEXT NOT NULL DEFAULT 'OTRO',
     "color" TEXT NOT NULL DEFAULT '#999999',
@@ -274,22 +263,29 @@ CREATE TABLE "PrintInk" (
     CONSTRAINT "PrintInk_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "MeliAppConfig" (
-    "id" TEXT NOT NULL DEFAULT 'singleton',
-    "clientId" TEXT NOT NULL,
-    "clientSecret" TEXT NOT NULL,
-    "redirectUri" TEXT NOT NULL,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "MeliAppConfig_pkey" PRIMARY KEY ("id")
-);
+-- CreateIndex
+CREATE INDEX "Supply_userId_idx" ON "Supply"("userId");
 
 -- CreateIndex
 CREATE INDEX "Supply_category_idx" ON "Supply"("category");
 
 -- CreateIndex
 CREATE INDEX "SupplyPriceHistory_supplyId_recordedAt_idx" ON "SupplyPriceHistory"("supplyId", "recordedAt");
+
+-- CreateIndex
+CREATE INDEX "LaborProfile_userId_idx" ON "LaborProfile"("userId");
+
+-- CreateIndex
+CREATE INDEX "MarketRate_userId_idx" ON "MarketRate"("userId");
+
+-- CreateIndex
+CREATE INDEX "FixedCost_userId_idx" ON "FixedCost"("userId");
+
+-- CreateIndex
+CREATE INDEX "Machine_userId_idx" ON "Machine"("userId");
+
+-- CreateIndex
+CREATE INDEX "Product_userId_idx" ON "Product"("userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "ProductSupply_productId_supplyId_key" ON "ProductSupply"("productId", "supplyId");
@@ -301,13 +297,16 @@ CREATE UNIQUE INDEX "ProductLabor_productId_profileId_key" ON "ProductLabor"("pr
 CREATE UNIQUE INDEX "ProductMachine_productId_machineId_key" ON "ProductMachine"("productId", "machineId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "VolumeTier_minQuantity_key" ON "VolumeTier"("minQuantity");
+CREATE INDEX "SalesChannel_userId_idx" ON "SalesChannel"("userId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Quote_number_key" ON "Quote"("number");
+CREATE UNIQUE INDEX "VolumeTier_userId_minQuantity_key" ON "VolumeTier"("userId", "minQuantity");
 
 -- CreateIndex
-CREATE INDEX "MeliCache_expiresAt_idx" ON "MeliCache"("expiresAt");
+CREATE UNIQUE INDEX "Quote_userId_number_key" ON "Quote"("userId", "number");
+
+-- CreateIndex
+CREATE INDEX "PrintInk_userId_idx" ON "PrintInk"("userId");
 
 -- AddForeignKey
 ALTER TABLE "SupplyPriceHistory" ADD CONSTRAINT "SupplyPriceHistory_supplyId_fkey" FOREIGN KEY ("supplyId") REFERENCES "Supply"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -335,3 +334,24 @@ ALTER TABLE "QuoteItem" ADD CONSTRAINT "QuoteItem_quoteId_fkey" FOREIGN KEY ("qu
 
 -- AddForeignKey
 ALTER TABLE "QuoteItem" ADD CONSTRAINT "QuoteItem_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+
+-- Supabase publica las tablas de `public` por su API con la clave anónima. La app entra con
+-- Prisma (rol dueño, que no pasa por RLS), así que se activa RLS sin políticas: por la API no se
+-- puede leer ni escribir nada.
+ALTER TABLE "Business" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Supply" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "SupplyPriceHistory" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "LaborProfile" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "MarketRate" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "FixedCost" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Machine" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Product" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "ProductSupply" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "ProductLabor" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "ProductMachine" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "SalesChannel" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "VolumeTier" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Quote" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "QuoteItem" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "PrintInk" ENABLE ROW LEVEL SECURITY;

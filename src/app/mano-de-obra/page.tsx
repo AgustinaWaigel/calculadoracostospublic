@@ -10,13 +10,14 @@ import { LaborProfileDialog } from "@/components/labor/labor-profile-dialog";
 import { HourlyRateCalculator } from "@/components/labor/hourly-rate-calculator";
 import { MarketRatesCard } from "@/components/labor/market-rates-card";
 import { deleteLaborProfile } from "@/actions/labor";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/db";
 import { compareHourlyRate } from "@/lib/calc/labor";
 import { formatPercent } from "@/lib/money";
 
 export const metadata = { title: "Mano de obra" };
 
 export default async function ManoDeObraPage() {
+  const db = await userDb();
   const [profiles, rates] = await Promise.all([
     db.laborProfile.findMany({ orderBy: { createdAt: "asc" }, include: { _count: { select: { usedIn: true } } } }),
     db.marketRate.findMany({ orderBy: { createdAt: "asc" } }),

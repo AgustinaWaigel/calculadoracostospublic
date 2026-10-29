@@ -1,5 +1,5 @@
 import "server-only";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/db";
 import { supplyUnitCost } from "@/lib/calc/supply";
 import { getCostingContext, type CostingContext } from "./costing";
 import type { EditorOptions } from "@/components/products/types";
@@ -37,6 +37,7 @@ export function contextToPlain(ctx: CostingContext): Omit<EditorOptions, "suppli
 }
 
 export async function getEditorOptions(): Promise<EditorOptions> {
+  const db = await userDb();
   const [ctx, supplies, profiles, machines, categories, inks] = await Promise.all([
     getCostingContext(),
     db.supply.findMany({ orderBy: { name: "asc" } }),

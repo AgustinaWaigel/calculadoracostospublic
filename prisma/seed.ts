@@ -4,29 +4,36 @@ const prisma = new PrismaClient();
 
 const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000);
 
+/**
+ * Datos de ejemplo para UNA cuenta (la tuya, para probar): `SEED_USER_ID=<id de auth.users> npm run db:seed`.
+ * El id está en Supabase → Authentication → Users. Borra antes los datos de esa cuenta.
+ */
 async function main() {
-  // Arrancamos de cero para que el seed sea reproducible.
+  const userId = process.env.SEED_USER_ID;
+  if (!userId) {
+    console.log("Sin SEED_USER_ID: no se cargan datos de ejemplo (cada cuenta arranca vacía).");
+    return;
+  }
+  const mine = { userId };
+
+  // Arrancamos de cero para que el seed sea reproducible (las hijas se borran en cascada).
   await prisma.$transaction([
-    prisma.quoteItem.deleteMany(),
-    prisma.quote.deleteMany(),
-    prisma.productSupply.deleteMany(),
-    prisma.productLabor.deleteMany(),
-    prisma.productMachine.deleteMany(),
-    prisma.product.deleteMany(),
-    prisma.supplyPriceHistory.deleteMany(),
-    prisma.supply.deleteMany(),
-    prisma.laborProfile.deleteMany(),
-    prisma.marketRate.deleteMany(),
-    prisma.fixedCost.deleteMany(),
-    prisma.machine.deleteMany(),
-    prisma.salesChannel.deleteMany(),
-    prisma.volumeTier.deleteMany(),
-    prisma.business.deleteMany(),
-    prisma.printInk.deleteMany(),
+    prisma.quote.deleteMany({ where: mine }),
+    prisma.product.deleteMany({ where: mine }),
+    prisma.supply.deleteMany({ where: mine }),
+    prisma.laborProfile.deleteMany({ where: mine }),
+    prisma.marketRate.deleteMany({ where: mine }),
+    prisma.fixedCost.deleteMany({ where: mine }),
+    prisma.machine.deleteMany({ where: mine }),
+    prisma.salesChannel.deleteMany({ where: mine }),
+    prisma.volumeTier.deleteMany({ where: mine }),
+    prisma.printInk.deleteMany({ where: mine }),
+    prisma.business.deleteMany({ where: { id: userId } }),
   ]);
 
   await prisma.business.create({
     data: {
+      id: userId,
       name: "Mi Emprendimiento",
       phone: "11 1234-5678",
       email: "hola@miemprendimiento.com.ar",
@@ -41,6 +48,7 @@ async function main() {
 
   const pouch = await prisma.supply.create({
     data: {
+      userId,
       name: "Pouch plastificado A4",
       kind: "MATERIAL",
       category: "Plastificado",
@@ -63,6 +71,7 @@ async function main() {
 
   const papel = await prisma.supply.create({
     data: {
+      userId,
       name: "Papel fotográfico A4",
       kind: "MATERIAL",
       category: "Papel",
@@ -82,6 +91,7 @@ async function main() {
 
   const impresion = await prisma.supply.create({
     data: {
+      userId,
       name: "Impresión A4 color",
       kind: "SERVICE",
       category: "Servicios",
@@ -97,57 +107,57 @@ async function main() {
 
   await prisma.laborProfile.createMany({
     data: [
-      { name: "Diseño", hourlyRate: 8000, color: "#6366f1" },
-      { name: "Producción", hourlyRate: 6000, color: "#f59e0b" },
-      { name: "Armado", hourlyRate: 5000, color: "#10b981" },
+      { userId, name: "Diseño", hourlyRate: 8000, color: "#6366f1" },
+      { userId, name: "Producción", hourlyRate: 6000, color: "#f59e0b" },
+      { userId, name: "Armado", hourlyRate: 5000, color: "#10b981" },
     ],
   });
 
   await prisma.fixedCost.createMany({
     data: [
-      { name: "Alquiler del taller", category: "ALQUILER", monthlyAmount: 180000 },
-      { name: "Luz", category: "SERVICIOS", monthlyAmount: 25000 },
-      { name: "Internet", category: "INTERNET", monthlyAmount: 18000 },
-      { name: "Monotributo", category: "IMPUESTOS", monthlyAmount: 40000 },
-      { name: "Canva Pro", category: "SUSCRIPCIONES", monthlyAmount: 9000 },
+      { userId, name: "Alquiler del taller", category: "ALQUILER", monthlyAmount: 180000 },
+      { userId, name: "Luz", category: "SERVICIOS", monthlyAmount: 25000 },
+      { userId, name: "Internet", category: "INTERNET", monthlyAmount: 18000 },
+      { userId, name: "Monotributo", category: "IMPUESTOS", monthlyAmount: 40000 },
+      { userId, name: "Canva Pro", category: "SUSCRIPCIONES", monthlyAmount: 9000 },
     ],
   });
 
   await prisma.machine.create({
-    data: { name: "Plastificadora A4", price: 120000, usefulLife: 20000, lifeUnit: "UNITS" },
+    data: { userId, name: "Plastificadora A4", price: 120000, usefulLife: 20000, lifeUnit: "UNITS" },
   });
 
   await prisma.salesChannel.createMany({
     data: [
-      { name: "Venta directa", type: "DIRECT", sortOrder: 0 },
-      { name: "Mercado Libre Clásica", type: "MELI_CLASSIC", commissionPercent: 14, sortOrder: 1 },
-      { name: "Mercado Libre Premium", type: "MELI_PREMIUM", commissionPercent: 29, sortOrder: 2 },
-      { name: "Mayorista", type: "WHOLESALE", priceAdjustPercent: -20, sortOrder: 3 },
+      { userId, name: "Venta directa", type: "DIRECT", sortOrder: 0 },
+      { userId, name: "Tienda online", type: "OTHER", commissionPercent: 10, sortOrder: 1 },
+      { userId, name: "Mayorista", type: "WHOLESALE", priceAdjustPercent: -20, sortOrder: 2 },
     ],
   });
 
   await prisma.volumeTier.createMany({
     data: [
-      { minQuantity: 1, discountPercent: 0 },
-      { minQuantity: 10, discountPercent: 5 },
-      { minQuantity: 50, discountPercent: 10 },
-      { minQuantity: 100, discountPercent: 15 },
+      { userId, minQuantity: 1, discountPercent: 0 },
+      { userId, minQuantity: 10, discountPercent: 5 },
+      { userId, minQuantity: 50, discountPercent: 10 },
+      { userId, minQuantity: 100, discountPercent: 15 },
     ],
   });
 
   // Sistema continuo CMYK (precios de ejemplo: cargá los tuyos).
   await prisma.printInk.createMany({
     data: [
-      { name: "Negro", channel: "K", color: "#1f2937", bottlePrice: 12000, yieldPages: 7500, sortOrder: 0 },
-      { name: "Cian", channel: "C", color: "#06b6d4", bottlePrice: 12000, yieldPages: 6000, sortOrder: 1 },
-      { name: "Magenta", channel: "M", color: "#d946ef", bottlePrice: 12000, yieldPages: 6000, sortOrder: 2 },
-      { name: "Amarillo", channel: "Y", color: "#facc15", bottlePrice: 12000, yieldPages: 6000, sortOrder: 3 },
+      { userId, name: "Negro", channel: "K", color: "#1f2937", bottlePrice: 12000, yieldPages: 7500, sortOrder: 0 },
+      { userId, name: "Cian", channel: "C", color: "#06b6d4", bottlePrice: 12000, yieldPages: 6000, sortOrder: 1 },
+      { userId, name: "Magenta", channel: "M", color: "#d946ef", bottlePrice: 12000, yieldPages: 6000, sortOrder: 2 },
+      { userId, name: "Amarillo", channel: "Y", color: "#facc15", bottlePrice: 12000, yieldPages: 6000, sortOrder: 3 },
     ],
   });
 
   // Costo esperado: 289,49 + 300 + 600 = $1.189,49 (sin fijos ni mano de obra).
   await prisma.product.create({
     data: {
+      userId,
       name: "Foto plastificada A4",
       description: "Foto impresa en papel fotográfico y plastificada. Ejemplo sin mano de obra ni fijos.",
       category: "Plastificados",

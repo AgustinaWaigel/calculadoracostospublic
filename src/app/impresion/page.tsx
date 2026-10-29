@@ -1,12 +1,13 @@
 import { PageHeader } from "@/components/shared/ui-bits";
 import { PrintCalculator } from "@/components/print/print-calculator";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/db";
 import { supplyUnitCost } from "@/lib/calc/supply";
 import type { InkChannel } from "@/lib/calc/print";
 
 export const metadata = { title: "Calculadora de impresión" };
 
 export default async function ImpresionPage() {
+  const db = await userDb();
   const [inks, supplies] = await Promise.all([
     db.printInk.findMany({ orderBy: { sortOrder: "asc" } }),
     db.supply.findMany({ where: { kind: "MATERIAL" }, orderBy: { name: "asc" } }),

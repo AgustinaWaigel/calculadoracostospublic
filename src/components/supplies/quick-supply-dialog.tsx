@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2Icon, SearchIcon } from "lucide-react";
+import { Loader2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,12 +17,10 @@ import {
 import { Field } from "@/components/shared/ui-bits";
 import { Money } from "@/components/shared/money";
 import { useAction } from "@/components/shared/use-action";
-import { MeliSearchDialog } from "@/components/meli/meli-search-dialog";
 import { saveSupply } from "@/actions/supplies";
 import { supplySchema, type SupplyData, type SupplyInput } from "@/lib/schemas";
 import { supplyUnitCost } from "@/lib/calc/supply";
-import { parseMoneyInput, toInputString } from "@/lib/money";
-import { guessPackQuantity } from "@/lib/meli/guess";
+import { parseMoneyInput } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import type { EditorOptions } from "@/components/products/types";
 
@@ -61,9 +59,9 @@ export function QuickSupplyDialog({
     if (open) reset(blank(defaultName));
   }, [open, defaultName, reset]);
 
-  const [kind, packPrice, packQuantity, usageUnit, name] = useWatch({
+  const [kind, packPrice, packQuantity, usageUnit] = useWatch({
     control,
-    name: ["kind", "packPrice", "packQuantity", "usageUnit", "name"],
+    name: ["kind", "packPrice", "packQuantity", "usageUnit"],
   });
   const price = parseMoneyInput(String(packPrice ?? ""));
   const qty = parseMoneyInput(String(packQuantity ?? ""));
@@ -143,26 +141,7 @@ export function QuickSupplyDialog({
             />
           </Field>
           <Field label="Precio" htmlFor="qs-price" error={errors.packPrice?.message}>
-            <div className="flex gap-1">
-              <Input id="qs-price" inputMode="decimal" className="min-w-0" placeholder="$" {...register("packPrice")} />
-              <MeliSearchDialog
-                title="Precio en Mercado Libre"
-                defaultQuery={name ?? ""}
-                onPick={(listing) => {
-                  setValue("packPrice", toInputString(listing.price), { shouldValidate: true });
-                  setValue("priceSource", "MELI_SEARCH");
-                  setValue("meliItemId", listing.id);
-                  setValue("url", listing.permalink ?? "");
-                  const guessed = guessPackQuantity(listing.title);
-                  if (guessed) setValue("packQuantity", String(guessed), { shouldValidate: true });
-                }}
-                trigger={
-                  <Button type="button" variant="outline" size="icon" aria-label="Buscar el precio en Mercado Libre">
-                    <SearchIcon />
-                  </Button>
-                }
-              />
-            </div>
+            <Input id="qs-price" inputMode="decimal" placeholder="$" {...register("packPrice")} />
           </Field>
           <Field label="Viene por" htmlFor="qs-purchase" error={errors.purchaseUnit?.message} hint="paquete, resma, rollo…">
             <Input id="qs-purchase" list="qs-purchase-units" {...register("purchaseUnit")} />
@@ -206,7 +185,6 @@ function blank(name: string): SupplyInput {
     packPrice: "",
     supplier: "",
     url: "",
-    meliItemId: "",
     priceSource: "MANUAL",
   };
 }

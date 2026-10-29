@@ -1,9 +1,11 @@
 import "server-only";
+import { cache } from "react";
+import { redirect } from "next/navigation";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { AUTH_KEY, AUTH_URL } from "./config";
+import { AUTH_KEY, AUTH_URL, LOGIN_PATH, authConfigured } from "./config";
 
-/** Cliente de Supabase (el de la web) con la sesión de quien está usando la calculadora. */
+/** Cliente de Supabase con la sesión de quien está usando la calculadora. */
 export async function authClient() {
   const store = await cookies();
   return createServerClient(AUTH_URL, AUTH_KEY, {
@@ -20,9 +22,18 @@ export async function authClient() {
   });
 }
 
-/** Mail de quien inició sesión (para mostrarlo), o null. */
-export async function sessionEmail(): Promise<string | null> {
+/** Cuenta que inició sesión (id y mail), o null. Una sola consulta por pedido. */
+export const sessionUser = cache(async (): Promise<{ id: string; email: string | null } | null> => {
+  if (!authConfigured) return null;
   const { data } = await (await authClient()).auth.getClaims();
-  const email = data?.claims?.email;
-  return email ? String(email) : null;
+  const claims = data?.claims;
+  if (!claims?.sub) return null;
+  return { id: String(claims.sub), email: claims.email ? String(claims.email) : null };
+});
+
+/** Id de la cuenta; sin sesión, manda a ingresar. */
+export async function requireUserId(): Promise<string> {
+  const user = await sessionUser();
+  if (!user) redirect(LOGIN_PATH);
+  return user.id;
 }

@@ -2,13 +2,14 @@ import { createElement } from "react";
 import { NextResponse } from "next/server";
 import { renderToBuffer, type DocumentProps } from "@react-pdf/renderer";
 import { QuotePdf } from "@/components/quotes/quote-pdf";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/db";
 import { getBusiness } from "@/server/costing";
 import { formatQuoteNumber } from "@/lib/quote-text";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const db = await userDb();
   const { id } = await params;
   let quote, business;
   try {

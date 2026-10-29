@@ -1,5 +1,6 @@
-// Service worker mínimo: hace la app instalable y muestra la última versión vista si no hay conexión.
-const CACHE = "costos-v1";
+// Service worker mínimo: hace la app instalable y muestra una página de aviso si no hay conexión.
+// Las páginas no se guardan: tienen datos de la cuenta y el dispositivo puede ser compartido.
+const CACHE = "costos-v2";
 const OFFLINE_URL = "/offline.html";
 
 self.addEventListener("install", (event) => {
@@ -20,7 +21,7 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
   if (request.method !== "GET" || url.origin !== self.location.origin) return;
-  // Nunca cacheamos la API (ML, dólar, PDFs, backups).
+  // Nunca cacheamos la API (dólar, PDFs, backups).
   if (url.pathname.startsWith("/api/")) return;
 
   // Archivos estáticos con hash: cache-first.
@@ -39,16 +40,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Páginas: network-first, con la última copia o la página offline como respaldo.
+  // Páginas: siempre de la red; sin conexión, la página offline.
   if (request.mode === "navigate") {
-    event.respondWith(
-      fetch(request)
-        .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(request, copy));
-          return res;
-        })
-        .catch(async () => (await caches.match(request)) || (await caches.match(OFFLINE_URL))),
-    );
+    event.respondWith(fetch(request).catch(async () => (await caches.match(OFFLINE_URL)) || Response.error()));
   }
 });

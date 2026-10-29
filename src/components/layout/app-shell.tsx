@@ -8,9 +8,12 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { logout } from "@/actions/auth";
+import { PUBLIC_PATHS } from "@/lib/auth/config";
 import { NAV_ITEMS, isActive } from "./nav-items";
 import { ThemeToggle } from "./theme-toggle";
 import { CurrencySwitcher } from "./currency-switcher";
+
+const AUTH_SCREENS = [...PUBLIC_PATHS, "/nueva-clave"];
 
 function BrandMark({ logoUrl, className }: { logoUrl: string | null; className?: string }) {
   return logoUrl ? (
@@ -95,8 +98,8 @@ export function AppShell({
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  // La pantalla de ingreso va sola, sin menú.
-  if (pathname === "/ingresar") return <>{children}</>;
+  // Las pantallas de la cuenta (ingresar, registrarse, contraseña) van solas, sin menú.
+  if (AUTH_SCREENS.includes(pathname)) return <>{children}</>;
 
   return (
     <div className="min-h-dvh bg-background">

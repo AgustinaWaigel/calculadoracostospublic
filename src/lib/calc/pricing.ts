@@ -45,9 +45,9 @@ export interface ChannelConfig {
   id?: string;
   name: string;
   type?: string;
-  /** Comisión del canal sobre el precio final (ML clásica/premium), en %. */
+  /** Comisión del canal sobre el precio final (plataformas de venta), en %. */
   commissionPercent?: DecimalInput;
-  /** Cargo fijo por venta (ej: costo fijo de ML en productos baratos). */
+  /** Cargo fijo por venta (ej: costo fijo de una plataforma en productos baratos). */
   fixedFee?: DecimalInput;
   /** Costo de envío que absorbés vos. */
   shippingCost?: DecimalInput;

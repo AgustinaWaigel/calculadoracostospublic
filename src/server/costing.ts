@@ -1,6 +1,7 @@
 import "server-only";
 import type { Prisma } from "@prisma/client";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/db";
+import { setUpAccount } from "./onboarding";
 import {
   computeProductCost,
   fixedCostPerMinute,
@@ -19,14 +20,15 @@ export const productInclude = {
 
 export type ProductWithRecipe = Prisma.ProductGetPayload<{ include: typeof productInclude }>;
 
-/** El emprendimiento es único: si no existe lo creamos con valores por defecto. */
+/** Uno por cuenta: la primera vez se crea con valores por defecto. */
 export async function getBusiness() {
-  const existing = await db.business.findUnique({ where: { id: "singleton" } });
-  if (existing) return existing;
-  return db.business.create({ data: { id: "singleton", name: "Mi Emprendimiento" } });
+  const db = await userDb();
+  const existing = await db.business.findUnique({ where: { id: db.$userId } });
+  return existing ?? setUpAccount(db);
 }
 
 export async function getCostingContext() {
+  const db = await userDb();
   const [business, fixedCosts, machines, channels, tiers] = await Promise.all([
     getBusiness(),
     db.fixedCost.findMany({ where: { active: true } }),
@@ -121,6 +123,7 @@ export function priceProduct(
 
 /** Costo + precio de todos los productos (para listados y dashboard). */
 export async function getAllProductsWithPricing() {
+  const db = await userDb();
   const [ctx, products] = await Promise.all([
     getCostingContext(),
     db.product.findMany({ include: productInclude, orderBy: { updatedAt: "desc" } }),

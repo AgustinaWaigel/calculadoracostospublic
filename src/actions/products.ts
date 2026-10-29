@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/db";
 import { productSchema } from "@/lib/schemas";
 import { errorMessage, fail, ok, zodFail, type ActionResult } from "@/lib/action-result";
 
@@ -12,6 +12,7 @@ function revalidateProducts(id?: string) {
 }
 
 export async function saveProduct(input: unknown): Promise<ActionResult<{ id: string }>> {
+  const db = await userDb();
   const parsed = productSchema.safeParse(input);
   if (!parsed.success) return zodFail(parsed.error);
   const { id, supplies, labor, machines, ...data } = parsed.data;
@@ -21,6 +22,7 @@ export async function saveProduct(input: unknown): Promise<ActionResult<{ id: st
     if (!id) {
       const created = await db.product.create({
         data: {
+          userId: db.$userId,
           ...fields,
           supplies: { create: supplies },
           labor: { create: labor },
@@ -55,6 +57,7 @@ export async function saveProduct(input: unknown): Promise<ActionResult<{ id: st
 
 /** Duplica un producto con toda su receta, para crear variantes rápido. */
 export async function duplicateProduct(id: string): Promise<ActionResult<{ id: string }>> {
+  const db = await userDb();
   const p = await db.product.findUnique({
     where: { id },
     include: { supplies: true, labor: true, machines: true },
@@ -62,6 +65,7 @@ export async function duplicateProduct(id: string): Promise<ActionResult<{ id: s
   if (!p) return fail("El producto no existe");
   const copy = await db.product.create({
     data: {
+      userId: db.$userId,
       name: `${p.name} (copia)`,
       description: p.description,
       category: p.category,
@@ -82,6 +86,7 @@ export async function duplicateProduct(id: string): Promise<ActionResult<{ id: s
 }
 
 export async function deleteProduct(id: string): Promise<ActionResult> {
+  const db = await userDb();
   await db.product.delete({ where: { id } });
   revalidateProducts();
   return ok(undefined, "Producto eliminado");

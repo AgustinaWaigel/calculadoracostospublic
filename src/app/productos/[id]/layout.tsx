@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/shared/ui-bits";
 import { ProductRowActions } from "@/components/products/product-row-actions";
 import { ProductTabs } from "@/components/products/product-tabs";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/db";
 
 export default async function ProductLayout({
   children,
@@ -11,6 +11,7 @@ export default async function ProductLayout({
   children: React.ReactNode;
   params: Promise<{ id: string }>;
 }) {
+  const db = await userDb();
   const { id } = await params;
   const product = await db.product.findUnique({ where: { id }, select: { id: true, name: true, category: true } });
   if (!product) notFound();

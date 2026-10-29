@@ -8,7 +8,7 @@ import { FixedCostDialog } from "@/components/fixed-costs/fixed-cost-dialog";
 import { MachineDialog } from "@/components/fixed-costs/machine-dialog";
 import { FixedAllocationForm, FixedCostToggle } from "@/components/fixed-costs/fixed-cost-row-controls";
 import { deleteFixedCost, deleteMachine } from "@/actions/fixed-costs";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/db";
 import { machineAmortizationRate, totalMonthlyFixedCosts } from "@/lib/calc/fixed-costs";
 import { FIXED_COST_LABELS } from "@/lib/schemas";
 import { formatNumber } from "@/lib/money";
@@ -17,6 +17,7 @@ import { getBusiness } from "@/server/costing";
 export const metadata = { title: "Costos fijos" };
 
 export default async function CostosFijosPage() {
+  const db = await userDb();
   const [costs, machines, business] = await Promise.all([
     db.fixedCost.findMany({ orderBy: [{ category: "asc" }, { createdAt: "asc" }] }),
     db.machine.findMany({ orderBy: { createdAt: "asc" }, include: { _count: { select: { usedIn: true } } } }),

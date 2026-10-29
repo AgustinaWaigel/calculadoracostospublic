@@ -66,7 +66,7 @@ export function ChannelDialog({ trigger, channel }: { trigger: React.ReactNode; 
         <DialogHeader>
           <DialogTitle>{channel ? "Editar canal" : "Nuevo canal de venta"}</DialogTitle>
           <DialogDescription>
-            Revisá las comisiones vigentes de tu categoría en Mercado Libre: cambian seguido.
+            Revisá las comisiones vigentes de cada plataforma: cambian seguido.
           </DialogDescription>
         </DialogHeader>
         <form
@@ -97,10 +97,10 @@ export function ChannelDialog({ trigger, channel }: { trigger: React.ReactNode; 
               )}
             />
           </Field>
-          <Field label="Comisión del canal (%)" htmlFor="ch-comm" error={e.commissionPercent?.message} hint="ML Clásica ≈ 13-15%">
+          <Field label="Comisión del canal (%)" htmlFor="ch-comm" error={e.commissionPercent?.message} hint="Lo que cobra la plataforma sobre el precio">
             <Input id="ch-comm" inputMode="decimal" {...form.register("commissionPercent")} />
           </Field>
-          <Field label="Cargo fijo por venta ($)" htmlFor="ch-fee" error={e.fixedFee?.message} hint="ML cobra un fijo en ventas chicas">
+          <Field label="Cargo fijo por venta ($)" htmlFor="ch-fee" error={e.fixedFee?.message} hint="Algunas plataformas cobran un fijo en ventas chicas">
             <Input id="ch-fee" inputMode="decimal" {...form.register("fixedFee")} />
           </Field>
           <Field label="Mercado Pago / pasarela (%)" htmlFor="ch-pay" error={e.paymentFeePercent?.message}>

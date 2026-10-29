@@ -10,7 +10,7 @@ import { Money } from "@/components/shared/money";
 import { SupplyForm } from "@/components/supplies/supply-form";
 import { SupplyActions } from "@/components/supplies/supply-actions";
 import { PriceHistoryChart, type HistoryPoint } from "@/components/supplies/price-history-chart";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/db";
 import { D, formatPercent, formatNumber } from "@/lib/money";
 import { daysSince, isPriceStale, priceChangePercent, supplyUnitCost } from "@/lib/calc/supply";
 import { PRICE_SOURCE_LABELS } from "@/lib/schemas";
@@ -20,6 +20,7 @@ export const metadata = { title: "Insumo" };
 const dateFmt = new Intl.DateTimeFormat("es-AR", { dateStyle: "medium" });
 
 export default async function InsumoPage({ params }: { params: Promise<{ id: string }> }) {
+  const db = await userDb();
   const { id } = await params;
   const [supply, categories] = await Promise.all([
     db.supply.findUnique({
@@ -45,13 +46,8 @@ export default async function InsumoPage({ params }: { params: Promise<{ id: str
     <>
       <PageHeader
         title={supply.name}
-        description={
-          <>
-            Precio actualizado hace {daysSince(supply.priceUpdatedAt)} días
-            {supply.meliItemId && <> · vinculado a {supply.meliItemId}</>}
-          </>
-        }
-        actions={<SupplyActions id={supply.id} linked={!!supply.meliItemId || !!supply.url?.includes("mercadolibre")} stale={stale} />}
+        description={`Precio actualizado hace ${daysSince(supply.priceUpdatedAt)} días`}
+        actions={<SupplyActions id={supply.id} stale={stale} />}
       />
 
       {stale && (
@@ -77,7 +73,7 @@ export default async function InsumoPage({ params }: { params: Promise<{ id: str
           packPrice: supply.packPrice.toString(),
           supplier: supply.supplier,
           url: supply.url,
-          meliItemId: supply.meliItemId }}
+        }}
       />
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_340px]">

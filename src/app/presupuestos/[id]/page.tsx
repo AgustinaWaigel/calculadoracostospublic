@@ -4,13 +4,14 @@ import { PageHeader } from "@/components/shared/ui-bits";
 import { QuoteEditor } from "@/components/quotes/quote-editor";
 import { QuoteActions } from "@/components/quotes/quote-actions";
 import { getQuoteOptions, quoteTiersFromJson } from "@/server/quote-options";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/db";
 import { buildQuoteMessage, formatQuoteNumber } from "@/lib/quote-text";
 import { whatsappUrl } from "@/lib/whatsapp";
 
 export const metadata = { title: "Presupuesto" };
 
 export default async function PresupuestoPage({ params }: { params: Promise<{ id: string }> }) {
+  const db = await userDb();
   const { id } = await params;
   const [quote, options] = await Promise.all([
     db.quote.findUnique({ where: { id }, include: { items: { orderBy: { sortOrder: "asc" } } } }),

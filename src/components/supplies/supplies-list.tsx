@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { AlertTriangleIcon, SearchIcon, StoreIcon } from "lucide-react";
+import { AlertTriangleIcon, SearchIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -20,7 +20,6 @@ export interface SupplyRow {
   packPrice: string;
   unitCost: string;
   supplier: string | null;
-  linkedToMeli: boolean;
   daysSinceUpdate: number;
   stale: boolean;
   usedInCount: number;
@@ -109,11 +108,6 @@ export function SuppliesList({ rows }: { rows: SupplyRow[] }) {
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className="font-medium">{r.name}</span>
                     {r.kind === "SERVICE" && <Badge variant="secondary">Servicio</Badge>}
-                    {r.linkedToMeli && (
-                      <Badge variant="outline" className="gap-1">
-                        <StoreIcon /> ML
-                      </Badge>
-                    )}
                     {r.stale && (
                       <Badge variant="outline" className="border-kraft/70 text-[#8a4f12] dark:text-[#f0c27a]">
                         <AlertTriangleIcon /> {r.daysSinceUpdate} días sin actualizar

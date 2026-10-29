@@ -22,7 +22,7 @@ describe("summarizeProductPricing (Foto plastificada A4)", () => {
     },
     channels: [
       { name: "Venta directa", type: "DIRECT" },
-      { name: "ML Clásica", type: "MELI_CLASSIC", commissionPercent: 14 },
+      { name: "Tienda online", type: "OTHER", commissionPercent: 14 },
       { name: "Imposible", commissionPercent: 100 },
     ],
     tiers: [
@@ -37,9 +37,9 @@ describe("summarizeProductPricing (Foto plastificada A4)", () => {
     expect(summary.basePrice.toDecimalPlaces(2).toString()).toBe("1982.48");
   });
 
-  it("redondea la venta directa a $10 y ML mantiene la ganancia", () => {
+  it("redondea la venta directa a $10 y la tienda online mantiene la ganancia", () => {
     expect(summary.reference?.price.toString()).toBe("1990");
-    const ml = summary.channels.find((c) => c.channelName === "ML Clásica");
+    const ml = summary.channels.find((c) => c.channelName === "Tienda online");
     expect(ml?.ok).toBe(true);
     if (ml?.ok) expect(ml.netProfit.gte(summary.targetProfit)).toBe(true);
   });

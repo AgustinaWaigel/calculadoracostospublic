@@ -3,12 +3,13 @@ import { PackageIcon, PlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState, PageHeader } from "@/components/shared/ui-bits";
 import { SuppliesList, type SupplyRow } from "@/components/supplies/supplies-list";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/db";
 import { daysSince, isPriceStale, supplyUnitCost } from "@/lib/calc/supply";
 
 export const metadata = { title: "Insumos" };
 
 export default async function InsumosPage() {
+  const db = await userDb();
   const supplies = await db.supply.findMany({
     orderBy: [{ category: "asc" }, { name: "asc" }],
     include: { _count: { select: { usedIn: true } } },
@@ -25,7 +26,6 @@ export default async function InsumosPage() {
     packPrice: s.packPrice.toString(),
     unitCost: supplyUnitCost(s).toString(),
     supplier: s.supplier,
-    linkedToMeli: !!s.meliItemId,
     daysSinceUpdate: daysSince(s.priceUpdatedAt, now),
     stale: isPriceStale(s.priceUpdatedAt, now),
     usedInCount: s._count.usedIn,

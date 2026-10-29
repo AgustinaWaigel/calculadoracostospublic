@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { formatMoney, parseMoneyInput, arsToUsd } from "@/lib/money";
-import { parseMeliRef } from "@/lib/meli/parse-url";
 import { normalizeArPhone, whatsappUrl } from "@/lib/whatsapp";
 
 describe("money", () => {
@@ -20,27 +19,6 @@ describe("money", () => {
   it("convierte a USD", () => {
     expect(arsToUsd(150000, 1500).toString()).toBe("100");
     expect(arsToUsd(1, 0).toString()).toBe("0");
-  });
-});
-
-describe("parseMeliRef", () => {
-  it("links de artículo", () => {
-    expect(
-      parseMeliRef("https://articulo.mercadolibre.com.ar/MLA-1234567890-pouch-a4-x100-_JM#position=1"),
-    ).toEqual({ kind: "item", id: "MLA1234567890" });
-  });
-  it("links de catálogo", () => {
-    expect(parseMeliRef("https://www.mercadolibre.com.ar/pouch-a4/p/MLA19876543")).toEqual({
-      kind: "product",
-      id: "MLA19876543",
-    });
-    expect(
-      parseMeliRef("https://www.mercadolibre.com.ar/pouch/p/MLA19876543?pdp_filters=item_id:MLA111222333"),
-    ).toEqual({ kind: "item", id: "MLA111222333" });
-  });
-  it("ID pegado directo", () => {
-    expect(parseMeliRef("mla-123456789")).toEqual({ kind: "item", id: "MLA123456789" });
-    expect(parseMeliRef("https://google.com")).toBeNull();
   });
 });
 

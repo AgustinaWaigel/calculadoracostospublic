@@ -6,8 +6,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { ServiceWorkerRegister } from "@/components/layout/sw-register";
 import { getDolarRates } from "@/lib/dolar";
 import { getBusiness } from "@/server/costing";
-import { sessionEmail } from "@/lib/auth/server";
-import { authConfigured } from "@/lib/auth/config";
+import { sessionUser } from "@/lib/auth/server";
 
 // Todo sale de la base de datos: nada se prerenderiza en el build.
 export const dynamic = "force-dynamic";
@@ -31,16 +30,14 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const [rates, business, userEmail] = await Promise.all([
-    getDolarRates(),
-    getBusiness(),
-    authConfigured ? sessionEmail() : null,
-  ]);
+  // Sin sesión (ingresar, registrarse) no hay emprendimiento que mostrar.
+  const [rates, user] = await Promise.all([getDolarRates(), sessionUser()]);
+  const business = user ? await getBusiness() : null;
   return (
     <html lang="es-AR" suppressHydrationWarning className={`${karla.variable} ${londrina.variable}`}>
       <body className="antialiased">
         <Providers rates={rates}>
-          <AppShell businessName={business.name} logoUrl={business.logoUrl} userEmail={userEmail}>{children}</AppShell>
+          <AppShell businessName={business?.name ?? "Calculadora de Costos"} logoUrl={business?.logoUrl ?? null} userEmail={user?.email ?? null}>{children}</AppShell>
         </Providers>
         <ServiceWorkerRegister />
       </body>

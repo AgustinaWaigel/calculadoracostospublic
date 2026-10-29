@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/db";
 import { quoteSchema, quoteStatuses } from "@/lib/schemas";
 import { errorMessage, fail, ok, zodFail, type ActionResult } from "@/lib/action-result";
 
@@ -16,6 +16,7 @@ function revalidateQuotes(id?: string) {
 const toDate = (s: string) => new Date(`${s}T00:00:00.000Z`);
 
 export async function saveQuote(input: unknown): Promise<ActionResult<{ id: string }>> {
+  const db = await userDb();
   const parsed = quoteSchema.safeParse(input);
   if (!parsed.success) return zodFail(parsed.error);
   const { id, items, validUntil, ...data } = parsed.data;
@@ -25,18 +26,19 @@ export async function saveQuote(input: unknown): Promise<ActionResult<{ id: stri
     if (!id) {
       const created = await db.$transaction(async (tx) => {
         const business = await tx.business.upsert({
-          where: { id: "singleton" },
-          create: { id: "singleton", name: "Mi Emprendimiento", quoteNumberSeq: 1 },
+          where: { id: db.$userId },
+          create: { id: db.$userId, name: "Mi Emprendimiento", quoteNumberSeq: 1 },
           update: { quoteNumberSeq: { increment: 1 } },
         });
         // Por si el contador quedó atrás (ej: backup importado), nunca repetimos número.
         const last = await tx.quote.aggregate({ _max: { number: true } });
         const number = Math.max(business.quoteNumberSeq, (last._max.number ?? 0) + 1);
         if (number !== business.quoteNumberSeq) {
-          await tx.business.update({ where: { id: "singleton" }, data: { quoteNumberSeq: number } });
+          await tx.business.update({ where: { id: db.$userId }, data: { quoteNumberSeq: number } });
         }
         return tx.quote.create({
           data: {
+            userId: db.$userId,
             ...data,
             number,
             validUntil: toDate(validUntil),
@@ -63,6 +65,7 @@ export async function saveQuote(input: unknown): Promise<ActionResult<{ id: stri
 }
 
 export async function setQuoteStatus(id: string, status: unknown): Promise<ActionResult> {
+  const db = await userDb();
   const parsed = z.enum(quoteStatuses).safeParse(status);
   if (!parsed.success) return fail("Estado inválido");
   await db.quote.update({ where: { id }, data: { status: parsed.data } });
@@ -71,6 +74,7 @@ export async function setQuoteStatus(id: string, status: unknown): Promise<Actio
 }
 
 export async function deleteQuote(id: string): Promise<ActionResult> {
+  const db = await userDb();
   await db.quote.delete({ where: { id } });
   revalidateQuotes();
   return ok(undefined, "Presupuesto eliminado");

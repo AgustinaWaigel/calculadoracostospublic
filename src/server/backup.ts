@@ -1,11 +1,12 @@
 import "server-only";
-import { db } from "@/lib/db";
+import { userDb } from "@/lib/db";
 import { plain } from "@/lib/plain";
 
 export const BACKUP_VERSION = 1;
 
-/** Todas las tablas de negocio (no se exportan tokens ni cache de ML). */
+/** Todas las tablas de la cuenta. */
 export async function exportAll() {
+  const db = await userDb();
   const [
     business,
     supplies,
