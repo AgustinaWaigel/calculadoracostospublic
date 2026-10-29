@@ -13,6 +13,7 @@ import { NAV_ITEMS, isActive } from "./nav-items";
 import { ThemeToggle } from "./theme-toggle";
 import { CurrencySwitcher } from "./currency-switcher";
 import { AlasCredit } from "./alas-credit";
+import { APP_NAME, CONTACTS, DEVELOPER, OWNER } from "@/lib/brand";
 
 const AUTH_SCREENS = [...PUBLIC_PATHS, "/nueva-clave"];
 
@@ -105,7 +106,7 @@ export function AppShell({
   return (
     <div className="min-h-dvh bg-background">
       {/* Riel verde en escritorio */}
-      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col gap-7 bg-sidebar px-4 py-5 text-sidebar-foreground lg:flex">
+      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col gap-7 overflow-y-auto bg-sidebar px-4 py-5 text-sidebar-foreground lg:flex">
         <Brand name={businessName} logoUrl={logoUrl} />
         <NavLinks />
         <div className="mt-auto grid gap-4">
@@ -123,7 +124,7 @@ export function AppShell({
                 <MenuIcon />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 border-none bg-sidebar p-4 text-sidebar-foreground">
+            <SheetContent side="left" className="w-72 overflow-y-auto border-none bg-sidebar p-4 text-sidebar-foreground">
               <SheetHeader className="mb-4 p-0">
                 <SheetTitle className="sr-only">Menú</SheetTitle>
                 <Brand name={businessName} logoUrl={logoUrl} />
@@ -145,7 +146,14 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-6xl px-4 pt-6 pb-28 sm:px-6 lg:px-8 lg:pt-8 lg:pb-12">{children}</main>
+        <main className="mx-auto w-full max-w-6xl px-4 pt-6 sm:px-6 lg:px-8 lg:pt-8">{children}</main>
+        <footer className="mx-auto w-full max-w-6xl px-4 pt-10 pb-28 text-center text-xs text-muted-foreground sm:px-6 lg:px-8 lg:pb-8">
+          {APP_NAME} de{" "}
+          <a href={CONTACTS.web.href} target="_blank" rel="noopener noreferrer" className="font-semibold underline-offset-4 hover:underline">
+            {OWNER}
+          </a>{" "}
+          · Desarrollado por {DEVELOPER}
+        </footer>
       </div>
 
       {/* Barra inferior en el celular */}
