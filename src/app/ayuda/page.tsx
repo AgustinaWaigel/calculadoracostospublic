@@ -31,6 +31,8 @@ interface Step {
   body: string;
   example: string;
   section: string;
+  /** Es del plan completo. */
+  paid?: boolean;
 }
 
 const STEPS: Step[] = [
@@ -54,6 +56,7 @@ const STEPS: Step[] = [
   },
   {
     href: "/mano-de-obra",
+    paid: true,
     section: "Mano de obra",
     icon: ClockIcon,
     accent: "kraft",
@@ -63,6 +66,7 @@ const STEPS: Step[] = [
   },
   {
     href: "/costos-fijos",
+    paid: true,
     section: "Costos fijos",
     icon: ReceiptIcon,
     accent: "cielo",
@@ -81,6 +85,7 @@ const STEPS: Step[] = [
   },
   {
     href: "/presupuestos",
+    paid: true,
     section: "Presupuestos",
     icon: FileTextIcon,
     accent: "amanecer",
@@ -90,6 +95,7 @@ const STEPS: Step[] = [
   },
   {
     href: "/ventas",
+    paid: true,
     section: "Ventas",
     icon: ShoppingBagIcon,
     accent: "menta",
@@ -99,6 +105,7 @@ const STEPS: Step[] = [
   },
   {
     href: "/inversiones",
+    paid: true,
     section: "Inversiones",
     icon: PiggyBankIcon,
     accent: "kraft",
@@ -137,8 +144,10 @@ const FAQ: { q: string; a: React.ReactNode }[] = [
     q: "¿Cuánto cuesta?",
     a: (
       <>
-        Las cuentas nuevas tienen {TRIAL_DAYS} días gratis con todo. Después es un solo plan de{" "}
-        {formatMoney(PLAN.price, "ARS", 0)} por mes con todo incluido. Se paga con Mercado Pago y se cancela cuando quieras desde{" "}
+        Las cuentas nuevas tienen {TRIAL_DAYS} días con todo. Después, el plan gratis es para siempre: cargás insumos y productos
+        y ves su costo de materiales y su precio. El plan completo ({formatMoney(PLAN.price, "ARS", 0)} por mes) suma mano de obra,
+        costos fijos, presupuestos, ventas, inversiones y las herramientas de tu rubro. Se paga con Mercado Pago y se cancela cuando
+        quieras desde{" "}
         <Link href="/plan" className="underline underline-offset-4">Mi plan</Link>.
       </>
     ),
@@ -164,8 +173,9 @@ export default async function AyudaPage() {
                     <s.icon className="size-5" />
                   </span>
                   <div className="grid min-w-0 gap-1.5">
-                    <h2 className="font-semibold">
+                    <h2 className="flex flex-wrap items-center gap-2 font-semibold">
                       {i + 1}. {s.title}
+                      {s.paid && <span className="rounded-full bg-halo/30 px-2 py-0.5 text-xs font-medium">Plan completo</span>}
                     </h2>
                     <p className="text-sm text-pretty">{s.body}</p>
                     <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">Ejemplo: {s.example}</p>

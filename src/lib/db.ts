@@ -2,7 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { PrismaClient } from "@prisma/client";
 import { requireUserId } from "@/lib/auth/server";
-import { TRIAL_DAYS, WRITE_BLOCKED, accessFor, type Access, type Tier } from "@/lib/billing";
+import { TRIAL_DAYS, WRITE_BLOCKED, accessFor, canWrite, type Access, type Tier } from "@/lib/billing";
 
 // Un solo cliente en desarrollo (Next recarga módulos en caliente).
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
@@ -71,7 +71,7 @@ const WRITE_OPS = new Set([
   "deleteMany",
 ]);
 
-/** Escritura sin plan (prueba vencida y sin suscripción). */
+/** Escritura que el plan gratis no permite (mano de obra, costos fijos, presupuestos…). */
 export class PlanError extends Error {
   constructor() {
     super(WRITE_BLOCKED);
@@ -176,7 +176,7 @@ export function scopedDb(userId: string, tier: Tier = "COMPLETE") {
         async $allOperations({ model, operation, args, query }) {
           const scope = scopeFor(model, userId);
           if (!scope) return query(args);
-          if (WRITE_OPS.has(operation) && tier === "NONE") throw new PlanError();
+          if (WRITE_OPS.has(operation) && !canWrite(tier, model)) throw new PlanError();
           const a = { ...(args as Row) };
 
           if (WHERE_OPS.has(operation)) {

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2Icon, PlusIcon, PrinterIcon, SaveIcon, Trash2Icon } from "lucide-react";
+import { Loader2Icon, LockIcon, PlusIcon, PrinterIcon, SaveIcon, Trash2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,7 +26,7 @@ import { saveProduct } from "@/actions/products";
 import { productSchema, type ProductData, type ProductInput } from "@/lib/schemas";
 import { formatMoney, formatNumber, formatPercent, toInputString } from "@/lib/money";
 import { cn } from "@/lib/utils";
-import { useIndustry } from "@/components/providers";
+import { useAccess, useIndustry } from "@/components/providers";
 import { INDUSTRIES } from "@/lib/industries";
 import type { EditorOptions, ProductFormValues } from "./types";
 
@@ -87,7 +87,10 @@ export function ProductEditor({ options, defaults }: { options: EditorOptions; d
   // Alta rápida: para qué fila se crea (null = cerrado).
   const [newSupply, setNewSupply] = useState<{ row: number; name: string } | null>(null);
   const [newPrint, setNewPrint] = useState<{ row: number } | null>(null);
-  const { print: prints, examples } = INDUSTRIES[useIndustry()];
+  const { print: industryPrints, examples } = INDUSTRIES[useIndustry()];
+  // Plan gratis: solo materiales (sin mano de obra, fijos, máquinas ni impresión).
+  const paid = useAccess()?.tier !== "FREE";
+  const prints = paid && industryPrints;
   function pickCreated(row: number, supply: CreatedSupply) {
     setCreated((list) => [...list.filter((s) => s.id !== supply.id), supply]);
     if (row >= supplies.fields.length) supplies.append({ supplyId: supply.id, quantity: "1" });
@@ -262,6 +265,7 @@ export function ProductEditor({ options, defaults }: { options: EditorOptions; d
             >
               <Input id="p-waste" inputMode="decimal" {...register("wastePercent")} />
             </Field>
+            {paid && (
             <div className="grid gap-2 sm:col-span-3">
               <Controller
                 control={control}
@@ -336,6 +340,7 @@ export function ProductEditor({ options, defaults }: { options: EditorOptions; d
                   </Field>
                 ))}
             </div>
+            )}
           </CardContent>
         </Card>
 
@@ -463,6 +468,21 @@ export function ProductEditor({ options, defaults }: { options: EditorOptions; d
           </CardContent>
         </Card>
 
+        {!paid && (
+          <Card className="border-dashed">
+            <CardContent className="flex flex-wrap items-center gap-3 text-sm">
+              <LockIcon className="size-4 shrink-0 text-muted-foreground" />
+              <span className="min-w-0 flex-1 text-muted-foreground">
+                Con el plan gratis el costo es de materiales. Con el plan completo sumás tu mano de obra, tus costos fijos y tus máquinas.
+              </span>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/plan">Ver plan completo</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {paid && (
         <Card>
           <CardHeader>
             <CardTitle>Mano de obra</CardTitle>
@@ -527,8 +547,9 @@ export function ProductEditor({ options, defaults }: { options: EditorOptions; d
             )}
           </CardContent>
         </Card>
+        )}
 
-        {options.machines.length > 0 && (
+        {paid && options.machines.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle>Máquinas</CardTitle>

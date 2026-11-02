@@ -159,11 +159,12 @@ describe.skipIf(!url)("cada cuenta ve solo lo suyo", () => {
     await expect(a.sale.delete({ where: { id: propia.id } })).rejects.toThrow();
   });
 
-  it("sin plan (prueba vencida) puede mirar pero no escribir", async () => {
-    const vencida = mod.scopedDb(B, "NONE");
-    expect(await vencida.supply.count()).toBeGreaterThan(0);
-    await expect(vencida.supply.create({ data: supplyData(B, "No") })).rejects.toThrow(mod.PlanError);
-    await expect(vencida.quote.deleteMany()).rejects.toThrow(mod.PlanError);
+  it("plan gratis: insumos y productos sí, lo demás no", async () => {
+    const gratis = mod.scopedDb(B, "FREE");
+    await expect(gratis.supply.create({ data: supplyData(B, "Gratis") })).resolves.toBeTruthy();
+    await expect(gratis.product.create({ data: { userId: B, name: "Gratis" } })).resolves.toBeTruthy();
+    await expect(gratis.fixedCost.create({ data: { userId: B, name: "Luz", monthlyAmount: 1 } })).rejects.toThrow(mod.PlanError);
+    await expect(gratis.quote.deleteMany()).rejects.toThrow(mod.PlanError);
   });
 
   it("cada cuenta tiene su propio emprendimiento", async () => {

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { CalculatorIcon, LogOutIcon, MenuIcon, SparklesIcon } from "lucide-react";
+import { CalculatorIcon, LockIcon, LogOutIcon, MenuIcon, SparklesIcon } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,7 @@ import { logout } from "@/actions/auth";
 import { PUBLIC_PATHS } from "@/lib/auth/config";
 import { useAccess, useIndustry } from "@/components/providers";
 import { INDUSTRIES } from "@/lib/industries";
+import { sectionLocked } from "@/lib/billing";
 import { NAV_ITEMS, isActive } from "./nav-items";
 import { ThemeToggle } from "./theme-toggle";
 import { CurrencySwitcher } from "./currency-switcher";
@@ -45,6 +46,7 @@ function Brand({ name, logoUrl }: { name: string; logoUrl: string | null }) {
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const prints = INDUSTRIES[useIndustry()].print;
+  const free = useAccess()?.tier === "FREE";
   return (
     <nav className="grid gap-0.5" aria-label="Secciones">
       {NAV_ITEMS.filter((item) => prints || !item.print).map((item) => {
@@ -64,6 +66,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
           >
             <item.icon className="size-4 shrink-0" />
             {item.label}
+            {free && sectionLocked("FREE", item.href) && <LockIcon className="ml-auto size-3.5 opacity-60" aria-label="Plan completo" />}
           </Link>
         );
       })}
@@ -101,16 +104,15 @@ function PlanNotice() {
   const pathname = usePathname();
   if (!access || pathname === "/plan") return null;
   let text: string | null = null;
-  if (access.kind === "trial") text = `Prueba gratis: te ${access.daysLeft === 1 ? "queda 1 día" : `quedan ${access.daysLeft} días`} con todo.`;
-  if (access.kind === "expired") text = "Tu prueba terminó: podés ver tus datos, pero para cargar o editar necesitás suscribirte.";
-  if (access.ending) text = `Cancelaste tu suscripción: te ${access.daysLeft === 1 ? "queda 1 día" : `quedan ${access.daysLeft} días`} de lo que ya pagaste.`;
+  if (access.kind === "trial") text = `Prueba gratis: te ${access.daysLeft === 1 ? "queda 1 día" : `quedan ${access.daysLeft} días`} con todo. Después seguís gratis con insumos y productos.`;
+  if (access.ending) text = `Cancelaste tu suscripción: te ${access.daysLeft === 1 ? "queda 1 día" : `quedan ${access.daysLeft} días`} con todo; después pasás al plan gratis.`;
   if (!text) return null;
   return (
     <div className="mx-auto mt-4 w-full max-w-6xl px-4 text-sm sm:px-6 lg:px-8">
-      <p className={cn("rounded-lg px-3 py-2", access.kind === "expired" ? "bg-destructive/10 text-destructive" : "bg-halo/25")}>
+      <p className="rounded-lg bg-halo/25 px-3 py-2">
         {text}{" "}
         <Link href="/plan" className="font-semibold underline underline-offset-4">
-          {access.kind === "trial" ? "Suscribirme" : "Ver el plan"}
+          {access.kind === "trial" ? "Ver planes" : "Volver a suscribirme"}
         </Link>
       </p>
     </div>

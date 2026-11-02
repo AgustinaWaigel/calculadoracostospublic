@@ -18,7 +18,8 @@ import { Money } from "@/components/shared/money";
 import { ACCENTS, type Accent } from "@/components/layout/nav-items";
 import { getAllProductsWithPricing, getBusiness } from "@/server/costing";
 import { getSales } from "@/server/sales";
-import { userDb } from "@/lib/db";
+import { currentAccess, userDb } from "@/lib/db";
+import { sectionLocked } from "@/lib/billing";
 import { daysSince, isPriceStale } from "@/lib/calc/supply";
 import { sum } from "@/lib/money";
 import { cn } from "@/lib/utils";
@@ -47,6 +48,8 @@ const ACTIONS: Action[] = [
 
 export default async function InicioPage() {
   const db = await userDb();
+  const { tier } = await currentAccess();
+  const free = tier === "FREE";
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
   const [business, { items }, supplies, profiles, fixedCosts, quotes, monthSales] = await Promise.all([
@@ -55,8 +58,8 @@ export default async function InicioPage() {
     db.supply.findMany({ select: { id: true, name: true, priceUpdatedAt: true }, orderBy: { priceUpdatedAt: "asc" } }),
     db.laborProfile.count(),
     db.fixedCost.count(),
-    db.quote.count(),
-    getSales({ date: { gte: monthStart } }),
+    free ? Promise.resolve(0) : db.quote.count(),
+    free ? Promise.resolve([]) : getSales({ date: { gte: monthStart } }),
   ]);
 
   const prints = INDUSTRIES[business.industry].print;
@@ -69,12 +72,14 @@ export default async function InicioPage() {
       text: "Nombre, logo, WhatsApp y si sos monotributista: salen en tus presupuestos y en el PDF.",
     },
     { done: supplies.length > 0, href: "/insumos/nuevo", title: "Cargá tus insumos", text: "Lo que comprás para producir: papel, tinta, pouch, anillos… con lo que pagaste y cuánto trae." },
-    { done: profiles > 0, href: "/mano-de-obra", title: "Poné cuánto vale tu hora", text: "Tu tiempo también es un costo. La app te ayuda a calcularlo." },
-    { done: fixedCosts > 0, href: "/costos-fijos", title: "Sumá tus gastos fijos", text: "Alquiler, luz, internet, monotributo: se reparten entre lo que producís." },
+    { done: profiles > 0, paid: true, href: "/mano-de-obra", title: "Poné cuánto vale tu hora", text: "Tu tiempo también es un costo. La app te ayuda a calcularlo." },
+    { done: fixedCosts > 0, paid: true, href: "/costos-fijos", title: "Sumá tus gastos fijos", text: "Alquiler, luz, internet, monotributo: se reparten entre lo que producís." },
     { done: items.length > 0, href: "/productos/nuevo", title: "Armá tu primer producto", text: "Elegís los insumos y los minutos de trabajo, y te sugiere el precio." },
-    { done: quotes > 0, href: "/presupuestos/nuevo", title: "Mandá tu primer presupuesto", text: "Con tus precios, en PDF o directo por WhatsApp." },
+    { done: quotes > 0, paid: true, href: "/presupuestos/nuevo", title: "Mandá tu primer presupuesto", text: "Con tus precios, en PDF o directo por WhatsApp." },
   ];
-  const doneCount = steps.filter((s) => s.done).length;
+  // Con el plan gratis solo quedan los pasos que puede hacer.
+  const visibleSteps = free ? steps.filter((s) => !("paid" in s)) : steps;
+  const doneCount = visibleSteps.filter((s) => s.done).length;
 
   const stale = supplies.filter((s) => isPriceStale(s.priceUpdatedAt));
   const best = items
@@ -94,7 +99,7 @@ export default async function InicioPage() {
 
       {/* Lo que vino a hacer */}
       <nav className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-label="¿Qué querés hacer?">
-        {ACTIONS.filter((a) => prints || !a.print).map((a) => (
+        {ACTIONS.filter((a) => (prints || !a.print) && !sectionLocked(tier, a.href)).map((a) => (
           <Link
             key={a.href}
             href={a.href}
@@ -115,13 +120,13 @@ export default async function InicioPage() {
       </nav>
 
       {/* Primeros pasos, hasta que estén todos */}
-      {doneCount < steps.length && (
+      {doneCount < visibleSteps.length && (
         <Card>
           <CardHeader>
             <CardTitle className="flex flex-wrap items-baseline justify-between gap-2">
               <span>Primeros pasos</span>
               <span className="text-sm font-normal text-muted-foreground">
-                {doneCount} de {steps.length} listos
+                {doneCount} de {visibleSteps.length} listos
               </span>
             </CardTitle>
             <p className="text-sm text-muted-foreground">
@@ -130,7 +135,7 @@ export default async function InicioPage() {
           </CardHeader>
           <CardContent>
             <ol className="grid gap-1">
-              {steps.map((s, i) => (
+              {visibleSteps.map((s, i) => (
                 <li key={s.href}>
                   <Link href={s.href} className="flex items-start gap-3 rounded-lg p-2 hover:bg-muted/50">
                     {s.done ? (

@@ -36,10 +36,10 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
   const status = {
     founder: { icon: CrownIcon, title: "Cuenta fundadora", text: "Tenés todo gratis para siempre. ¡Gracias por estar desde el principio!" },
     active: access.ending
-      ? { icon: HourglassIcon, title: "Suscripción cancelada", text: `Seguís con acceso hasta el ${business?.currentPeriodEnd ? dateFmt.format(business.currentPeriodEnd) : "fin del período"}. Podés volver a suscribirte cuando quieras.` }
+      ? { icon: HourglassIcon, title: "Suscripción cancelada", text: `Tenés todo hasta el ${business?.currentPeriodEnd ? dateFmt.format(business.currentPeriodEnd) : "fin del período"}; después pasás al plan gratis. Podés volver a suscribirte cuando quieras.` }
       : { icon: SparklesIcon, title: "Suscripción activa", text: `Tu suscripción está activa.${business?.currentPeriodEnd ? ` Próximo débito: ${dateFmt.format(business.currentPeriodEnd)}.` : ""}` },
-    trial: { icon: HourglassIcon, title: `Prueba gratis: te quedan ${access.daysLeft} ${access.daysLeft === 1 ? "día" : "días"}`, text: `Durante ${TRIAL_DAYS} días tenés todo gratis. Suscribite para seguir cargando datos cuando termine.` },
-    expired: { icon: LockIcon, title: "Tu prueba terminó", text: "Podés ver todos tus datos, pero para cargar o editar necesitás suscribirte." },
+    trial: { icon: HourglassIcon, title: `Prueba gratis: te quedan ${access.daysLeft} ${access.daysLeft === 1 ? "día" : "días"}`, text: `Durante ${TRIAL_DAYS} días tenés todo. Después seguís gratis con insumos y productos, o te suscribís para tener todo.` },
+    free: { icon: LockIcon, title: "Plan gratis", text: "Cargás insumos y productos y ves su costo de materiales y su precio. Para mano de obra, costos fijos, presupuestos, ventas e inversiones, suscribite al plan completo." },
   }[access.kind];
   const pending = business?.subscriptionStatus === "PENDING" && access.kind !== "active";
 

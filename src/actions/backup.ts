@@ -130,8 +130,8 @@ function adopt(d: z.infer<typeof backupSchema>["data"], userId: string) {
 /** Restaura un backup JSON completo (reemplaza todos los datos de la cuenta). */
 export async function importBackup(json: string): Promise<ActionResult<{ counts: Record<string, number> }>> {
   const userId = await requireUserId();
-  // Restaurar escribe todo con el cliente sin filtro: el plan se revisa acá.
-  if ((await getAccess(userId)).tier === "NONE") return fail(WRITE_BLOCKED);
+  // Restaurar escribe todo con el cliente sin filtro: es del plan completo y se revisa acá.
+  if ((await getAccess(userId)).tier !== "COMPLETE") return fail(WRITE_BLOCKED);
   let raw: unknown;
   try {
     raw = JSON.parse(json);
