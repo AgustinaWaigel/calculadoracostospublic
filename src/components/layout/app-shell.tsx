@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { CalculatorIcon, LogOutIcon, MenuIcon } from "lucide-react";
+import { CalculatorIcon, LockIcon, LogOutIcon, MenuIcon, SparklesIcon } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { logout } from "@/actions/auth";
 import { PUBLIC_PATHS } from "@/lib/auth/config";
+import { useAccess } from "@/components/providers";
 import { NAV_ITEMS, isActive } from "./nav-items";
 import { ThemeToggle } from "./theme-toggle";
 import { CurrencySwitcher } from "./currency-switcher";
@@ -42,6 +43,7 @@ function Brand({ name, logoUrl }: { name: string; logoUrl: string | null }) {
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const simple = useAccess()?.tier === "SIMPLE";
   return (
     <nav className="grid gap-0.5" aria-label="Secciones">
       {NAV_ITEMS.map((item) => {
@@ -61,6 +63,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
           >
             <item.icon className="size-4 shrink-0" />
             {item.label}
+            {simple && item.complete && <LockIcon className="ml-auto size-3.5 opacity-60" aria-label="Plan Completo" />}
           </Link>
         );
       })}
@@ -76,6 +79,12 @@ function Account({ email }: { email: string | null }) {
       <span className="min-w-0 flex-1 truncate text-xs text-sidebar-foreground/70" title={email}>
         {email}
       </span>
+      <Link
+        href="/plan"
+        className="flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-sidebar-foreground/90 outline-sidebar-ring transition-colors duration-150 hover:bg-sidebar-accent"
+      >
+        <SparklesIcon className="size-3.5" /> Mi plan
+      </Link>
       <button
         type="submit"
         className="flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-sidebar-foreground/90 outline-sidebar-ring transition-colors duration-150 hover:bg-sidebar-accent"
@@ -83,6 +92,28 @@ function Account({ email }: { email: string | null }) {
         <LogOutIcon className="size-3.5" /> Salir
       </button>
     </form>
+  );
+}
+
+/** Aviso de prueba gratis o de plan vencido, arriba de cada página. */
+function PlanNotice() {
+  const access = useAccess();
+  const pathname = usePathname();
+  if (!access || pathname === "/plan") return null;
+  let text: string | null = null;
+  if (access.kind === "trial") text = `Prueba gratis: te ${access.daysLeft === 1 ? "queda 1 día" : `quedan ${access.daysLeft} días`} con todo el plan Completo.`;
+  if (access.kind === "expired") text = "Tu prueba terminó: podés ver tus datos, pero para cargar o editar necesitás un plan.";
+  if (access.ending) text = `Cancelaste tu suscripción: te ${access.daysLeft === 1 ? "queda 1 día" : `quedan ${access.daysLeft} días`} de lo que ya pagaste.`;
+  if (!text) return null;
+  return (
+    <div className="mx-auto mt-4 w-full max-w-6xl px-4 text-sm sm:px-6 lg:px-8">
+      <p className={cn("rounded-lg px-3 py-2", access.kind === "expired" ? "bg-destructive/10 text-destructive" : "bg-halo/25")}>
+        {text}{" "}
+        <Link href="/plan" className="font-semibold underline underline-offset-4">
+          {access.kind === "trial" ? "Elegir plan" : "Ver planes"}
+        </Link>
+      </p>
+    </div>
   );
 }
 
@@ -146,6 +177,7 @@ export function AppShell({
           </div>
         </header>
 
+        <PlanNotice />
         <main className="mx-auto w-full max-w-6xl px-4 pt-6 sm:px-6 lg:px-8 lg:pt-8">{children}</main>
         <footer className="mx-auto w-full max-w-6xl px-4 pt-10 pb-28 text-center text-xs text-muted-foreground sm:px-6 lg:px-8 lg:pb-8">
           {APP_NAME} de{" "}

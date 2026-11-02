@@ -64,6 +64,8 @@ Después configurá las cuentas (abajo) y entrá a http://localhost:3000/registr
 | `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto de Supabase (el mismo de la base). |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clave publicable (anon) del proyecto. No es secreta. |
 | `NEXT_PUBLIC_APP_URL` | URL pública de la app. Se usa en los links de los mails. |
+| `MP_ACCESS_TOKEN` | Access Token de producción de Mercado Pago (secreto). Sin él no se puede suscribir nadie. |
+| `MP_WEBHOOK_SECRET` | Clave secreta de los webhooks de Mercado Pago, para validar los avisos. |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Opcional. Site Key de Cloudflare Turnstile para el captcha. |
 
 Al construir, `scripts/check-env.mjs` revisa las variables y dice cuál está mal (sin mostrar la contraseña).
@@ -82,6 +84,24 @@ Al construir, `scripts/check-env.mjs` revisa las variables y dice cuál está ma
 - **Encabezados de seguridad** en todas las páginas: CSP, no se puede meter en un iframe, HSTS, nosniff.
 - **Logo**: solo se acepta una imagen embebida (PNG/JPG/WebP); nunca una dirección, porque el PDF la cargaría desde el servidor.
 - Contraseñas de al menos 8 caracteres; el mensaje de "recuperar" no revela si el mail tiene cuenta.
+
+### Planes y suscripción (Mercado Pago)
+
+| Plan | Precio | Incluye |
+|---|---|---|
+| Simple | $15.000/mes | Insumos, productos, mano de obra, costos fijos, impresión y calculadora rápida |
+| Completo | $20.000/mes | Todo lo anterior + presupuestos, ventas e inversiones |
+
+- Las cuentas nuevas tienen **14 días de prueba** con el plan Completo. Las cuentas que existían antes de cobrar son **fundadoras**: Completo gratis para siempre.
+- Sin plan (prueba vencida) se puede **ver todo pero no cargar ni editar**. Con el Simple, las secciones del Completo muestran un aviso para cambiar de plan.
+- Se controla en el servidor: `userDb()` rechaza las escrituras que el plan no permite (`src/lib/billing.ts`). Precios y secciones de cada plan están ahí.
+- El cobro es una suscripción de Mercado Pago (débito automático mensual). Si cancela, conserva el acceso hasta el próximo débito. Cambiar de plan cambia el monto de la suscripción.
+
+**Configurar Mercado Pago**
+1. [Mercado Pago Developers](https://www.mercadopago.com.ar/developers/panel/app) → **Crear aplicación** (producto: Suscripciones).
+2. En la aplicación → **Credenciales de producción** → copiá el **Access Token** a `MP_ACCESS_TOKEN` en Vercel.
+3. **Webhooks** → URL de producción `https://TU-DOMINIO/api/mercadopago/webhook`, evento **Planes y suscripciones**. Copiá la **clave secreta** a `MP_WEBHOOK_SECRET`.
+4. Redeploy.
 
 ### Cómo se separan los datos
 

@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { rawDb, userDb } from "@/lib/db";
+import { getAccess, rawDb, userDb } from "@/lib/db";
+import { writeBlockedMessage } from "@/lib/billing";
 import { requireUserId } from "@/lib/auth/server";
 import { parseCsv } from "@/lib/csv";
 import { D } from "@/lib/money";
@@ -69,6 +70,11 @@ const OWNED_TABLES = [
 const OLD_PRICE_SOURCES = new Set(["MELI_SEARCH", "MELI_LINK", "MELI_REFRESH"]);
 const OLD_CHANNEL_TYPES = new Set(["MELI_CLASSIC", "MELI_PREMIUM"]);
 
+const BILLING_FIELDS = ["plan", "trialEndsAt", "mpPreapprovalId", "subscriptionStatus", "currentPeriodEnd", "subscriptionSyncedAt"];
+/** El plan y la suscripción nunca salen del archivo (se podría editar para ponerse un plan gratis). */
+const withoutBilling = (row: Row) => Object.fromEntries(Object.entries(row).filter(([k]) => !BILLING_FIELDS.includes(k)));
+const safeLogo = (v: unknown) => (typeof v === "string" && isSafeLogo(v) ? v : null);
+
 /**
  * Pasa el backup a la cuenta: ids nuevos (los del archivo pueden existir en otra cuenta),
  * referencias traducidas, `userId` propio y sin columnas que ya no existen.
@@ -99,9 +105,7 @@ function adopt(d: z.infer<typeof backupSchema>["data"], userId: string) {
     });
   const [business] = d.business;
   return {
-    business: business
-      ? { ...business, id: userId, logoUrl: typeof business.logoUrl === "string" && isSafeLogo(business.logoUrl) ? business.logoUrl : null }
-      : { id: userId, name: "Mi Emprendimiento" },
+    business: business ? { ...withoutBilling(business), id: userId, logoUrl: safeLogo(business.logoUrl) } : { id: userId, name: "Mi Emprendimiento" },
     supplies: map("supplies"),
     supplyPriceHistory: map("supplyPriceHistory"),
     laborProfiles: map("laborProfiles"),
@@ -126,6 +130,9 @@ function adopt(d: z.infer<typeof backupSchema>["data"], userId: string) {
 /** Restaura un backup JSON completo (reemplaza todos los datos de la cuenta). */
 export async function importBackup(json: string): Promise<ActionResult<{ counts: Record<string, number> }>> {
   const userId = await requireUserId();
+  // Restaurar escribe todo (va con el cliente sin filtro): pide el plan Completo.
+  const { tier } = await getAccess(userId);
+  if (tier !== "COMPLETE") return fail(writeBlockedMessage(tier === "SIMPLE" ? "SIMPLE" : "NONE"));
   let raw: unknown;
   try {
     raw = JSON.parse(json);
@@ -158,9 +165,14 @@ export async function importBackup(json: string): Promise<ActionResult<{ counts:
         await tx.volumeTier.deleteMany({ where: mine });
         await tx.printInk.deleteMany({ where: mine });
         await tx.investmentMovement.deleteMany({ where: mine });
+        // El plan y la suscripción son de la cuenta, no del backup: se conservan.
+        const billing = await tx.business.findUnique({
+          where: { id: userId },
+          select: { plan: true, trialEndsAt: true, mpPreapprovalId: true, subscriptionStatus: true, currentPeriodEnd: true, subscriptionSyncedAt: true },
+        });
         await tx.business.deleteMany({ where: { id: userId } });
 
-        await tx.business.create({ data: as(rows.business) });
+        await tx.business.create({ data: as({ ...rows.business, ...billing }) });
         await tx.supply.createMany({ data: as(rows.supplies) });
         await tx.supplyPriceHistory.createMany({ data: as(rows.supplyPriceHistory) });
         await tx.laborProfile.createMany({ data: as(rows.laborProfiles) });

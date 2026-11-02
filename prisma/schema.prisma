@@ -16,25 +16,50 @@ datasource db {
 
 /// Uno por cuenta: el id es el de la cuenta (auth.users.id).
 model Business {
-  id                   String          @id
+  id                   String             @id
   name                 String
   logoUrl              String?
   phone                String?
   email                String?
   instagram            String?
   address              String?
-  taxCondition         TaxCondition    @default(MONOTRIBUTO)
-  ivaPercent           Decimal         @default(21)
-  monthlyUnitsEstimate Int             @default(100)
+  taxCondition         TaxCondition       @default(MONOTRIBUTO)
+  ivaPercent           Decimal            @default(21)
+  monthlyUnitsEstimate Int                @default(100)
   /// Cómo se reparten los fijos: por tamaño (unidades normales) o por minutos de trabajo.
-  fixedAllocation      FixedAllocation @default(SIZE)
-  monthlyHoursEstimate Int             @default(80)
-  defaultMarginPercent Decimal         @default(40)
-  pricingMode          PricingMode     @default(MARGIN)
-  roundTo              Decimal         @default(10)
-  quoteValidityDays    Int             @default(7)
-  quoteNumberSeq       Int             @default(0)
-  updatedAt            DateTime        @updatedAt
+  fixedAllocation      FixedAllocation    @default(SIZE)
+  monthlyHoursEstimate Int                @default(80)
+  defaultMarginPercent Decimal            @default(40)
+  pricingMode          PricingMode        @default(MARGIN)
+  roundTo              Decimal            @default(10)
+  quoteValidityDays    Int                @default(7)
+  quoteNumberSeq       Int                @default(0)
+  /// Plan pago de la cuenta. FOUNDER = las cuentas de antes de cobrar: Completo gratis para siempre.
+  plan                 BillingPlan        @default(NONE)
+  /// Hasta cuándo dura la prueba gratis (plan Completo) de una cuenta nueva.
+  trialEndsAt          DateTime?
+  /// Suscripción de Mercado Pago (preapproval) y su estado, sincronizado por webhook.
+  mpPreapprovalId      String?            @unique
+  subscriptionStatus   SubscriptionStatus @default(NONE)
+  /// Hasta cuándo está pago (si cancela, sigue con acceso hasta esa fecha).
+  currentPeriodEnd     DateTime?
+  subscriptionSyncedAt DateTime?
+  updatedAt            DateTime           @updatedAt
+}
+
+enum BillingPlan {
+  NONE
+  SIMPLE
+  COMPLETE
+  FOUNDER
+}
+
+enum SubscriptionStatus {
+  NONE
+  PENDING
+  AUTHORIZED
+  PAUSED
+  CANCELLED
 }
 
 enum TaxCondition {

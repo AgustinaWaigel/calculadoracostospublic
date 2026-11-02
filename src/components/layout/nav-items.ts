@@ -77,6 +77,8 @@ export interface NavItem {
   accent: Accent;
   /** Aparece en la barra inferior del celular. */
   mobile?: boolean;
+  /** Sección del plan Completo. */
+  complete?: boolean;
 }
 
 export const NAV_ITEMS: NavItem[] = [
@@ -85,9 +87,9 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/mano-de-obra", label: "Mano de obra", icon: ClockIcon, accent: "kraft" },
   { href: "/costos-fijos", label: "Costos fijos", icon: ReceiptIcon, accent: "cielo" },
   { href: "/productos", label: "Productos", icon: ShapesIcon, accent: "lavanda", mobile: true },
-  { href: "/presupuestos", label: "Presupuestos", icon: FileTextIcon, accent: "amanecer", mobile: true },
-  { href: "/ventas", label: "Ventas", icon: ShoppingBagIcon, accent: "menta" },
-  { href: "/inversiones", label: "Inversiones", icon: PiggyBankIcon, accent: "kraft" },
+  { href: "/presupuestos", label: "Presupuestos", icon: FileTextIcon, accent: "amanecer", mobile: true, complete: true },
+  { href: "/ventas", label: "Ventas", icon: ShoppingBagIcon, accent: "menta", complete: true },
+  { href: "/inversiones", label: "Inversiones", icon: PiggyBankIcon, accent: "kraft", complete: true },
   { href: "/impresion", label: "Impresión", icon: PrinterIcon, accent: "menta" },
   { href: "/calculadora", label: "Calculadora rápida", icon: CalculatorIcon, accent: "halo" },
   { href: "/ajustes", label: "Ajustes", icon: SettingsIcon, accent: "neutro" },

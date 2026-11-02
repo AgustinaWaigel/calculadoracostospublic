@@ -157,6 +157,17 @@ describe.skipIf(!url)("cada cuenta ve solo lo suyo", () => {
     await expect(a.sale.delete({ where: { id: propia.id } })).rejects.toThrow();
   });
 
+  it("respeta el plan: sin plan no escribe, el Simple no toca presupuestos", async () => {
+    const vencida = mod.scopedDb(B, "NONE");
+    const simple = mod.scopedDb(B, "SIMPLE");
+    expect(await vencida.supply.count()).toBeGreaterThan(0); // mirar, sí
+    await expect(vencida.supply.create({ data: supplyData(B, "No") })).rejects.toThrow(mod.PlanError);
+    await expect(simple.supply.create({ data: supplyData(B, "Sí") })).resolves.toBeTruthy();
+    await expect(
+      simple.quote.create({ data: { userId: B, number: 900, clientName: "C", validUntil: new Date() } }),
+    ).rejects.toThrow(mod.PlanError);
+  });
+
   it("cada cuenta tiene su propio emprendimiento", async () => {
     expect((await b.business.findUnique({ where: { id: A } }))?.id).toBe(B);
   });

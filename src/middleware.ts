@@ -11,6 +11,8 @@ export async function middleware(request: NextRequest) {
   const isPublic = PUBLIC_PATHS.includes(pathname);
   // Los links de los mails (confirmar cuenta, recuperar clave) llegan sin sesión.
   if (pathname.startsWith("/auth/")) return NextResponse.next();
+  // Los avisos de Mercado Pago llegan sin sesión (se validan con la firma y consultando a MP).
+  if (pathname === "/api/mercadopago/webhook") return NextResponse.next();
 
   if (!authConfigured) return isPublic ? NextResponse.next() : deny(request, "config");
 

@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { PrismaClient } from "@prisma/client";
 import { requireUserId } from "@/lib/auth/server";
+import { TRIAL_DAYS, accessFor, canWrite, writeBlockedMessage, type Access, type Tier } from "@/lib/billing";
 
 // Un solo cliente en desarrollo (Next recarga módulos en caliente).
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
@@ -57,6 +58,25 @@ const NESTED: Record<string, Record<string, string>> = {
   Quote: { items: "QuoteItem" },
   Sale: { items: "SaleItem" },
 };
+
+const WRITE_OPS = new Set([
+  "create",
+  "createMany",
+  "createManyAndReturn",
+  "update",
+  "updateMany",
+  "updateManyAndReturn",
+  "upsert",
+  "delete",
+  "deleteMany",
+]);
+
+/** Escritura que el plan de la cuenta no permite (prueba vencida, o sección del plan Completo). */
+export class PlanError extends Error {
+  constructor(tier: Tier) {
+    super(writeBlockedMessage(tier));
+  }
+}
 
 const WHERE_OPS = new Set([
   "findUnique",
@@ -146,16 +166,17 @@ function withOwner(model: string, data: Row, userId: string): Row {
  * a toda lectura, actualización y borrado; completa el `userId` al crear; y revisa que las
  * referencias (insumo de una receta, producto de un presupuesto…) sean de la misma cuenta.
  */
-export function scopedDb(userId: string) {
+export function scopedDb(userId: string, tier: Tier = "COMPLETE") {
   return rawDb.$extends({
     name: "cuenta",
     // Para completar `userId` al crear (TypeScript lo pide; igual se pisa abajo) y el id del emprendimiento.
-    client: { $userId: userId },
+    client: { $userId: userId, $tier: tier },
     query: {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
           const scope = scopeFor(model, userId);
           if (!scope) return query(args);
+          if (WRITE_OPS.has(operation) && !canWrite(tier, model)) throw new PlanError(tier);
           const a = { ...(args as Row) };
 
           if (WHERE_OPS.has(operation)) {
@@ -207,4 +228,23 @@ export function scopedDb(userId: string) {
 export type UserDb = ReturnType<typeof scopedDb>;
 
 /** El cliente de la cuenta que inició sesión (si no hay sesión, manda a ingresar). */
-export const userDb = cache(async (): Promise<UserDb> => scopedDb(await requireUserId()));
+export const userDb = cache(async (): Promise<UserDb> => {
+  const userId = await requireUserId();
+  return scopedDb(userId, (await getAccess(userId)).tier);
+});
+
+/** Plan y acceso de la cuenta. Una cuenta que todavía no armó su emprendimiento arranca en prueba. */
+export const getAccess = cache(async (userId: string): Promise<Access> => {
+  const b = await rawDb.business.findUnique({
+    where: { id: userId },
+    select: { plan: true, subscriptionStatus: true, trialEndsAt: true, currentPeriodEnd: true },
+  });
+  return accessFor(
+    b ?? { plan: "NONE", subscriptionStatus: "NONE", trialEndsAt: new Date(Date.now() + TRIAL_DAYS * 86_400_000), currentPeriodEnd: null },
+  );
+});
+
+/** Acceso de quien inició sesión. */
+export async function currentAccess(): Promise<Access> {
+  return getAccess(await requireUserId());
+}

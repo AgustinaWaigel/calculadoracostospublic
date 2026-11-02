@@ -46,6 +46,10 @@ if (!supabaseUrl) {
 }
 if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) problems.push("NEXT_PUBLIC_SUPABASE_ANON_KEY no está cargada.");
 
+if (!process.env.MP_ACCESS_TOKEN) {
+  console.warn("⚠ Sin MP_ACCESS_TOKEN: la app anda, pero no se puede suscribir nadie (Mercado Pago → Tus integraciones → Credenciales de producción).");
+}
+
 if (problems.length) {
   console.error("\n✖ Variables de entorno con problemas:\n");
   for (const p of problems) console.error(`  • ${p}`);

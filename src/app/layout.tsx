@@ -8,6 +8,7 @@ import { getDolarRates } from "@/lib/dolar";
 import { getBusiness } from "@/server/costing";
 import { APP_NAME, OWNER } from "@/lib/brand";
 import { sessionUser } from "@/lib/auth/server";
+import { getAccess } from "@/lib/db";
 
 // Todo sale de la base de datos: nada se prerenderiza en el build.
 export const dynamic = "force-dynamic";
@@ -33,11 +34,11 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   // Sin sesión (ingresar, registrarse) no hay emprendimiento que mostrar.
   const [rates, user] = await Promise.all([getDolarRates(), sessionUser()]);
-  const business = user ? await getBusiness() : null;
+  const [business, access] = user ? await Promise.all([getBusiness(), getAccess(user.id)]) : [null, null];
   return (
     <html lang="es-AR" suppressHydrationWarning className={`${karla.variable} ${londrina.variable}`}>
       <body className="antialiased">
-        <Providers rates={rates}>
+        <Providers rates={rates} access={access}>
           <AppShell businessName={business?.name ?? APP_NAME} logoUrl={business?.logoUrl ?? null} userEmail={user?.email ?? null}>{children}</AppShell>
         </Providers>
         <ServiceWorkerRegister />

@@ -6,11 +6,15 @@ import { userDb } from "@/lib/db";
 import { getBusiness } from "@/server/costing";
 import { formatQuoteNumber } from "@/lib/quote-text";
 import { isSafeLogo } from "@/lib/schemas";
+import { sectionLocked } from "@/lib/billing";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const db = await userDb();
+  if (sectionLocked(db.$tier, "/api/presupuestos")) {
+    return NextResponse.json({ error: "Los presupuestos son del plan Completo." }, { status: 403 });
+  }
   const { id } = await params;
   let quote, business;
   try {
