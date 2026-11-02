@@ -103,6 +103,10 @@ Al construir, `scripts/check-env.mjs` revisa las variables y dice cuál está ma
 3. **Webhooks** → URL de producción `https://TU-DOMINIO/api/mercadopago/webhook`, evento **Planes y suscripciones**. Copiá la **clave secreta** a `MP_WEBHOOK_SECRET`.
 4. Redeploy.
 
+### Panel
+
+`/panel`: números de todas las cuentas (altas, ingresos, planes, uso, rubros). Solo lo ven los mails de `ADMIN_EMAILS` (separados por coma; por defecto agustinawaigel0@gmail.com). Para cualquier otro, la página no existe.
+
 ### Cómo se separan los datos
 
 - Cada tabla con dueño tiene `userId` (el id de `auth.users`); el emprendimiento (`Business`) usa ese id como clave. Las tablas hijas (recetas, ítems de presupuesto, historial de precios) cuelgan de una fila con dueño.

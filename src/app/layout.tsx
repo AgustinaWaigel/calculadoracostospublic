@@ -10,6 +10,7 @@ import { APP_NAME, OWNER } from "@/lib/brand";
 import { industryLabel } from "@/lib/industries";
 import { sessionUser } from "@/lib/auth/server";
 import { getAccess } from "@/lib/db";
+import { isAdmin } from "@/server/admin";
 
 // Todo sale de la base de datos: nada se prerenderiza en el build.
 export const dynamic = "force-dynamic";
@@ -37,7 +38,7 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   // Sin sesión (ingresar, registrarse) no hay emprendimiento que mostrar.
   const [rates, user] = await Promise.all([getDolarRates(), sessionUser()]);
-  const [business, access] = user ? await Promise.all([getBusiness(), getAccess(user.id)]) : [null, null];
+  const [business, access, admin] = user ? await Promise.all([getBusiness(), getAccess(user.id), isAdmin()]) : [null, null, false];
   return (
     <html lang="es-AR" suppressHydrationWarning className={`${karla.variable} ${londrina.variable}`}>
       <body className="antialiased">
@@ -47,6 +48,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             logoUrl={business?.logoUrl ?? null}
             userEmail={user?.email ?? null}
             industryLabel={business ? industryLabel(business.industry, business.industryName) : "Costos y precios"}
+            admin={admin}
           >{children}</AppShell>
         </Providers>
         <ServiceWorkerRegister />

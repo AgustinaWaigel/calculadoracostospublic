@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { CalculatorIcon, LockIcon, LogOutIcon, MenuIcon, SparklesIcon } from "lucide-react";
+import { BarChart3Icon, CalculatorIcon, LockIcon, LogOutIcon, MenuIcon, SparklesIcon } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -75,25 +75,28 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 /** Quién está adentro y cómo salir (al pie del menú). */
-function Account({ email }: { email: string | null }) {
+function Account({ email, admin }: { email: string | null; admin: boolean }) {
   if (!email) return null;
+  const item =
+    "flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-sidebar-foreground/90 outline-sidebar-ring transition-colors duration-150 hover:bg-sidebar-accent";
   return (
-    <form action={logout} className="flex items-center gap-2 border-t border-sidebar-border px-3 pt-3">
-      <span className="min-w-0 flex-1 truncate text-xs text-sidebar-foreground/70" title={email}>
+    <form action={logout} className="grid gap-1.5 border-t border-sidebar-border px-3 pt-3">
+      <span className="truncate text-xs text-sidebar-foreground/70" title={email}>
         {email}
       </span>
-      <Link
-        href="/plan"
-        className="flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-sidebar-foreground/90 outline-sidebar-ring transition-colors duration-150 hover:bg-sidebar-accent"
-      >
-        <SparklesIcon className="size-3.5" /> Mi plan
-      </Link>
-      <button
-        type="submit"
-        className="flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-sidebar-foreground/90 outline-sidebar-ring transition-colors duration-150 hover:bg-sidebar-accent"
-      >
-        <LogOutIcon className="size-3.5" /> Salir
-      </button>
+      <div className="-mx-2 flex flex-wrap items-center gap-1">
+        <Link href="/plan" className={item}>
+          <SparklesIcon className="size-3.5" /> Mi plan
+        </Link>
+        {admin && (
+          <Link href="/panel" className={item}>
+            <BarChart3Icon className="size-3.5" /> Panel
+          </Link>
+        )}
+        <button type="submit" className={cn(item, "ml-auto")}>
+          <LogOutIcon className="size-3.5" /> Salir
+        </button>
+      </div>
     </form>
   );
 }
@@ -125,6 +128,7 @@ export function AppShell({
   logoUrl,
   userEmail,
   industryLabel,
+  admin = false,
 }: {
   children: React.ReactNode;
   businessName: string;
@@ -132,6 +136,8 @@ export function AppShell({
   userEmail: string | null;
   /** Rubro (o el nombre que escribió si eligió "Otro"), abajo del nombre del emprendimiento. */
   industryLabel: string;
+  /** Ve el link al panel. */
+  admin?: boolean;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -148,7 +154,7 @@ export function AppShell({
         <div className="mt-auto grid gap-4">
           <p className="px-3 font-display text-base leading-tight text-sidebar-primary">Para escribir, soñar y volar.</p>
           <AlasCredit className="px-3 text-sidebar-foreground/75" linkClassName="hover:text-sidebar-foreground" />
-          <Account email={userEmail} />
+          <Account email={userEmail} admin={admin} />
         </div>
       </aside>
 
@@ -168,7 +174,7 @@ export function AppShell({
               <NavLinks onNavigate={() => setOpen(false)} />
               <div className="mt-auto grid gap-4">
                 <AlasCredit className="px-3 text-sidebar-foreground/75" linkClassName="hover:text-sidebar-foreground" />
-                <Account email={userEmail} />
+                <Account email={userEmail} admin={admin} />
               </div>
             </SheetContent>
           </Sheet>
