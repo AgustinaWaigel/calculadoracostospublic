@@ -56,19 +56,23 @@ export default async function PresupuestosPage() {
               return (
                 <li key={q.id}>
                   <Link href={`/presupuestos/${q.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50">
-                    <span className="w-14 text-sm text-muted-foreground tabular-nums">{formatQuoteNumber(q.number)}</span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium">{q.clientName}</p>
+                      <p className="truncate font-medium">
+                        <span className="mr-2 text-sm font-normal text-muted-foreground tabular-nums">{formatQuoteNumber(q.number)}</span>
+                        {q.clientName}
+                      </p>
                       <p className="text-xs text-muted-foreground">
                         {q.items.length} ítem{q.items.length !== 1 && "s"} · válido hasta {dateFmt.format(q.validUntil)}
                       </p>
                     </div>
-                    {expired ? (
-                      <Badge variant="destructive">Vencido</Badge>
-                    ) : (
-                      <Badge variant={STATUS_VARIANT[q.status]}>{QUOTE_STATUS_LABELS[q.status]}</Badge>
-                    )}
-                    <Money value={total.toString()} className="w-28 text-right font-semibold" />
+                    <div className="flex shrink-0 flex-col items-end gap-1 sm:flex-row-reverse sm:items-center sm:gap-3">
+                      <Money value={total.toString()} className="font-semibold sm:w-28 sm:text-right" />
+                      {expired ? (
+                        <Badge variant="destructive">Vencido</Badge>
+                      ) : (
+                        <Badge variant={STATUS_VARIANT[q.status]}>{QUOTE_STATUS_LABELS[q.status]}</Badge>
+                      )}
+                    </div>
                   </Link>
                 </li>
               );

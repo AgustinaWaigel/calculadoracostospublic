@@ -70,10 +70,30 @@ export default async function ManoDeObraPage() {
                 {profiles.map((p) => {
                   const cmp = comparisons.get(p.id);
                   return (
-                    <li key={p.id} className="flex items-center gap-3 px-4 py-3">
+                    <li key={p.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-1 px-4 py-3">
                       <span className="size-3 shrink-0 rounded-full" style={{ backgroundColor: p.color ?? "#999" }} />
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium">{p.name}</p>
+                      <p className="min-w-0 truncate font-medium">{p.name}</p>
+                      <div className="flex items-center gap-1">
+                        <Money value={p.hourlyRate.toString()} className="font-semibold" />
+                        <span className="text-xs text-muted-foreground">/h</span>
+                        <LaborProfileDialog
+                          profile={{
+                            id: p.id,
+                            name: p.name,
+                            hourlyRate: p.hourlyRate.toString(),
+                            isOwn: p.isOwn,
+                            color: p.color,
+                          }}
+                          trigger={
+                            <Button variant="ghost" size="icon-sm" aria-label={`Editar ${p.name}`}>
+                              <PencilIcon />
+                            </Button>
+                          }
+                        />
+                        <ConfirmDelete title={`¿Eliminar “${p.name}”?`} onConfirm={deleteLaborProfile.bind(null, p.id)} />
+                      </div>
+                      {/* Segunda línea: qué es, dónde se usa y cómo está contra el mercado. */}
+                      <div className="col-start-2 col-end-4 flex flex-wrap items-center gap-x-2 gap-y-1">
                         <p className="text-xs text-muted-foreground">
                           {p.isOwn ? "Lo hacés vos: es ganancia" : "Se le paga a alguien: es costo"}
                           {" · "}
@@ -81,37 +101,20 @@ export default async function ManoDeObraPage() {
                           {" · "}
                           <Money value={p.hourlyRate.div(60).toString()} /> por minuto
                         </p>
+                        {cmp && (
+                          <Badge
+                            variant="outline"
+                            className={
+                              cmp.isBelowMarket
+                                ? "border-kraft/70 text-[#8a4f12] dark:text-[#f0c27a]"
+                                : "border-menta text-tinta dark:text-menta"
+                            }
+                          >
+                            {cmp.diffPercent.gte(0) ? "+" : ""}
+                            {formatPercent(cmp.diffPercent, 0)} vs. mercado
+                          </Badge>
+                        )}
                       </div>
-                      {cmp && (
-                        <Badge
-                          variant="outline"
-                          className={
-                            cmp.isBelowMarket
-                              ? "border-kraft/70 text-[#8a4f12] dark:text-[#f0c27a]"
-                              : "border-menta text-tinta dark:text-menta"
-                          }
-                        >
-                          {cmp.diffPercent.gte(0) ? "+" : ""}
-                          {formatPercent(cmp.diffPercent, 0)} vs. mercado
-                        </Badge>
-                      )}
-                      <Money value={p.hourlyRate.toString()} className="font-semibold" />
-                      <span className="text-xs text-muted-foreground">/h</span>
-                      <LaborProfileDialog
-                        profile={{
-                          id: p.id,
-                          name: p.name,
-                          hourlyRate: p.hourlyRate.toString(),
-                          isOwn: p.isOwn,
-                          color: p.color,
-                        }}
-                        trigger={
-                          <Button variant="ghost" size="icon-sm" aria-label={`Editar ${p.name}`}>
-                            <PencilIcon />
-                          </Button>
-                        }
-                      />
-                      <ConfirmDelete title={`¿Eliminar “${p.name}”?`} onConfirm={deleteLaborProfile.bind(null, p.id)} />
                     </li>
                   );
                 })}

@@ -98,7 +98,7 @@ export function StatCard({
             </span>
           )}
         </div>
-        <div className={cn("mt-1 text-3xl font-bold tracking-tight tabular-nums", toneClass)}>{value}</div>
+        <div className={cn("mt-1 text-xl font-bold tracking-tight break-words tabular-nums min-[400px]:text-2xl sm:text-3xl", toneClass)}>{value}</div>
         {hint && <div className="mt-0.5 text-xs text-muted-foreground">{hint}</div>}
       </CardContent>
     </Card>
