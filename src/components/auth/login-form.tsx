@@ -98,6 +98,7 @@ export function SignupForm() {
             </label>
           ))}
         </div>
+        <Input name="rubroNombre" aria-label="Si elegiste Otro, ¿cuál?" placeholder="Si elegiste Otro, ¿cuál? (ej: Cerámica)" maxLength={60} />
       </fieldset>
       <EmailField id="signup-email" defaultValue={state?.email} />
       <NewPasswordFields prefix="signup" />

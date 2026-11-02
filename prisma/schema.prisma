@@ -20,6 +20,8 @@ model Business {
   name                 String
   /// Rubro: define qué secciones ve y con qué ejemplos.
   industry             Industry           @default(OTRO)
+  /// Nombre del rubro cuando eligió "Otro" (ej: "Cerámica").
+  industryName         String?
   logoUrl              String?
   phone                String?
   email                String?

@@ -27,8 +27,9 @@ export async function getBusiness() {
   const db = await userDb();
   const existing = await db.business.findUnique({ where: { id: db.$userId } });
   if (existing) return existing;
-  const rubro = (await sessionUser())?.rubro;
-  return setUpAccount(db, isIndustry(rubro) ? rubro : "OTRO");
+  const user = await sessionUser();
+  const rubro = isIndustry(user?.rubro) ? user.rubro : "OTRO";
+  return setUpAccount(db, rubro, rubro === "OTRO" ? user?.rubroNombre ?? null : null);
 }
 
 export async function getCostingContext() {
@@ -40,9 +41,12 @@ export async function getCostingContext() {
     db.salesChannel.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
     db.volumeTier.findMany({ orderBy: { minQuantity: "asc" } }),
   ]);
-  const monthlyFixed = totalMonthlyFixedCosts(fixedCosts);
+  // Plan gratis: el costo es solo de materiales (sin fijos, mano de obra ni máquinas).
+  const materialsOnly = db.$tier === "FREE";
+  const monthlyFixed = materialsOnly ? totalMonthlyFixedCosts([]) : totalMonthlyFixedCosts(fixedCosts);
   return {
     business,
+    materialsOnly,
     monthlyFixed,
     fixedPerUnit: fixedCostPerUnit(monthlyFixed, business.monthlyUnitsEstimate),
     fixedPerMinute: fixedCostPerMinute(monthlyFixed, business.monthlyHoursEstimate),
@@ -71,14 +75,14 @@ export function costProduct(product: ProductWithRecipe, ctx: CostingContext): Pr
       packQuantity: s.supply.packQuantity,
       quantity: s.quantity,
     })),
-    labor: product.labor.map((l) => ({
+    labor: (ctx.materialsOnly ? [] : product.labor).map((l) => ({
       id: l.profileId,
       name: l.profile.name,
       hourlyRate: l.profile.hourlyRate,
       minutes: l.minutes,
       isOwn: l.profile.isOwn,
     })),
-    machines: product.machines.map((m) => ({
+    machines: (ctx.materialsOnly ? [] : product.machines).map((m) => ({
       id: m.machineId,
       name: m.machine.name,
       price: m.machine.price,

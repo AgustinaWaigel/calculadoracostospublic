@@ -31,13 +31,13 @@ function BrandMark({ logoUrl, className }: { logoUrl: string | null; className?:
   );
 }
 
-function Brand({ name, logoUrl }: { name: string; logoUrl: string | null }) {
+function Brand({ name, logoUrl, subtitle }: { name: string; logoUrl: string | null; subtitle: string }) {
   return (
     <Link href="/" className="flex items-center gap-3 rounded-lg outline-sidebar-ring">
       <BrandMark logoUrl={logoUrl} className="size-11 shrink-0" />
       <span className="min-w-0">
         <span className="block truncate font-display text-xl leading-none tracking-wide uppercase">{name}</span>
-        <span className="mt-1 block text-xs text-sidebar-foreground/70">Costos y precios</span>
+        <span className="mt-1 block truncate text-xs text-sidebar-foreground/70">{subtitle}</span>
       </span>
     </Link>
   );
@@ -124,11 +124,14 @@ export function AppShell({
   businessName,
   logoUrl,
   userEmail,
+  industryLabel,
 }: {
   children: React.ReactNode;
   businessName: string;
   logoUrl: string | null;
   userEmail: string | null;
+  /** Rubro (o el nombre que escribió si eligió "Otro"), abajo del nombre del emprendimiento. */
+  industryLabel: string;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -140,7 +143,7 @@ export function AppShell({
     <div className="min-h-dvh bg-background">
       {/* Riel verde en escritorio */}
       <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col gap-7 overflow-y-auto bg-sidebar px-4 py-5 text-sidebar-foreground lg:flex">
-        <Brand name={businessName} logoUrl={logoUrl} />
+        <Brand name={businessName} logoUrl={logoUrl} subtitle={industryLabel} />
         <NavLinks />
         <div className="mt-auto grid gap-4">
           <p className="px-3 font-display text-base leading-tight text-sidebar-primary">Para escribir, soñar y volar.</p>
@@ -160,7 +163,7 @@ export function AppShell({
             <SheetContent side="left" className="w-72 overflow-y-auto border-none bg-sidebar p-4 text-sidebar-foreground">
               <SheetHeader className="mb-4 p-0">
                 <SheetTitle className="sr-only">Menú</SheetTitle>
-                <Brand name={businessName} logoUrl={logoUrl} />
+                <Brand name={businessName} logoUrl={logoUrl} subtitle={industryLabel} />
               </SheetHeader>
               <NavLinks onNavigate={() => setOpen(false)} />
               <div className="mt-auto grid gap-4">

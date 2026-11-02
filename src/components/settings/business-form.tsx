@@ -38,6 +38,7 @@ export function BusinessForm({ defaults }: { defaults: BusinessInput }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const logo = watch("logoUrl");
   const taxCondition = watch("taxCondition");
+  const industry = watch("industry");
 
   return (
     <form
@@ -105,7 +106,7 @@ export function BusinessForm({ defaults }: { defaults: BusinessInput }) {
                   <SelectContent>
                     {industries.map((i) => (
                       <SelectItem key={i} value={i}>
-                        {INDUSTRIES[i].label} · <span className="text-muted-foreground">{INDUSTRIES[i].hint}</span>
+                        {i === "OTRO" ? "Otro (escribís cuál)" : INDUSTRIES[i].label} · <span className="text-muted-foreground">{INDUSTRIES[i].hint}</span>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -113,6 +114,11 @@ export function BusinessForm({ defaults }: { defaults: BusinessInput }) {
               )}
             />
           </Field>
+          {industry === "OTRO" && (
+            <Field label="¿Cuál es tu rubro?" htmlFor="b-industry-name" error={errors.industryName?.message} className="sm:col-span-2">
+              <Input id="b-industry-name" placeholder="Ej: Cerámica, Cosmética natural, Sublimación…" {...register("industryName")} />
+            </Field>
+          )}
           <Field label="WhatsApp / teléfono" htmlFor="b-phone" error={errors.phone?.message}>
             <Input id="b-phone" type="tel" {...register("phone")} />
           </Field>

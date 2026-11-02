@@ -53,3 +53,9 @@ export const INDUSTRIES: Record<Industry, IndustryConfig> = {
 export function isIndustry(value: unknown): value is Industry {
   return typeof value === "string" && (industries as readonly string[]).includes(value);
 }
+
+/** Cómo se muestra el rubro: el nombre que escribió si eligió "Otro". */
+export function industryLabel(industry: Industry, name?: string | null): string {
+  if (industry === "OTRO") return name?.trim() || "Costos y precios";
+  return INDUSTRIES[industry].label;
+}

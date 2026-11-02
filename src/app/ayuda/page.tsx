@@ -1,7 +1,10 @@
 import Link from "next/link";
 import {
+  BugIcon,
   ClockIcon,
   FileTextIcon,
+  LifeBuoyIcon,
+  LightbulbIcon,
   PackageIcon,
   PiggyBankIcon,
   PrinterIcon,
@@ -20,6 +23,7 @@ import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { INDUSTRIES } from "@/lib/industries";
 import { getBusiness } from "@/server/costing";
+import { sessionUser } from "@/lib/auth/server";
 
 export const metadata = { title: "Cómo se usa" };
 
@@ -115,6 +119,34 @@ const STEPS: Step[] = [
   },
 ];
 
+const CONTACT_OPTIONS = [
+  {
+    icon: BugIcon,
+    title: "Tengo un problema",
+    text: "Algo no anda o da un error.",
+    subject: "Calculadora de Insumos · Tengo un problema",
+    body: "Contanos qué estabas haciendo y qué pasó (si podés, adjuntá una captura):\n\n",
+  },
+  {
+    icon: LightbulbIcon,
+    title: "Tengo una recomendación",
+    text: "Una idea para mejorar la app.",
+    subject: "Calculadora de Insumos · Tengo una recomendación",
+    body: "¿Qué te gustaría que tenga o que funcione distinto?\n\n",
+  },
+  {
+    icon: LifeBuoyIcon,
+    title: "Necesito ayuda",
+    text: "No sé cómo hacer algo.",
+    subject: "Calculadora de Insumos · Necesito ayuda",
+    body: "¿Qué querés hacer y dónde te trabaste?\n\n",
+  },
+];
+
+function mailto(subject: string, body: string, account: string) {
+  return `${CONTACTS.email.href}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(`${body}\n---\n${account}`)}`;
+}
+
 const FAQ: { q: string; a: React.ReactNode }[] = [
   {
     q: "¿Qué precio me sugiere y de dónde sale?",
@@ -159,7 +191,9 @@ const FAQ: { q: string; a: React.ReactNode }[] = [
 ];
 
 export default async function AyudaPage() {
-  const business = await getBusiness();
+  const [business, user] = await Promise.all([getBusiness(), sessionUser()]);
+  // Para que sepamos de qué cuenta nos escriben (va en el cuerpo del mail, se puede borrar).
+  const account = `Emprendimiento: ${business.name}\nCuenta: ${user?.email ?? ""}`;
   return (
     <>
       <PageHeader title="Cómo se usa" description="En este orden, y en un rato tenés el precio real de lo que vendés." />
@@ -221,15 +255,34 @@ export default async function AyudaPage() {
           </div>
         </section>
 
-        <Card>
-          <CardContent className="text-sm">
-            ¿Te quedó alguna duda o encontraste algo que no anda? Escribinos por WhatsApp al{" "}
+        <section className="grid gap-3" id="contacto">
+          <h2 className="font-display text-2xl tracking-wide uppercase">¿Necesitás algo?</h2>
+          <p className="text-sm text-muted-foreground">
+            Elegí qué te pasa y se abre un mail a {CONTACTS.email.label} con el asunto listo. Te respondemos a tu mail.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {CONTACT_OPTIONS.map((o) => (
+              <a
+                key={o.subject}
+                href={mailto(o.subject, o.body, account)}
+                className="flex items-start gap-3 rounded-xl border bg-card p-4 transition-colors duration-150 hover:bg-muted/50"
+              >
+                <o.icon className="mt-0.5 size-5 shrink-0 text-primary" />
+                <span>
+                  <span className="block font-semibold">{o.title}</span>
+                  <span className="block text-sm text-muted-foreground">{o.text}</span>
+                </span>
+              </a>
+            ))}
+          </div>
+          <p className="text-sm text-muted-foreground">
+            ¿Preferís WhatsApp? Escribinos al{" "}
             <a href={CONTACTS.whatsapp.href} target="_blank" rel="noopener noreferrer" className="font-semibold text-primary underline-offset-4 hover:underline">
               {CONTACTS.whatsapp.label}
             </a>
             .
-          </CardContent>
-        </Card>
+          </p>
+        </section>
       </div>
     </>
   );

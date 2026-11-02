@@ -8,11 +8,11 @@ import type { Industry } from "@/lib/industries";
  * salgan de una (canales de venta y descuentos por cantidad) y su prueba gratis del plan Completo. Si dos pedidos llegan juntos,
  * solo uno lo arma.
  */
-export async function setUpAccount(db: UserDb, industry: Industry = "OTRO") {
+export async function setUpAccount(db: UserDb, industry: Industry = "OTRO", industryName: string | null = null) {
   const userId = db.$userId;
   await db.$transaction(async (tx) => {
     const { count } = await tx.business.createMany({
-      data: [{ id: userId, name: "Mi Emprendimiento", industry, trialEndsAt: new Date(Date.now() + TRIAL_DAYS * 86_400_000) }],
+      data: [{ id: userId, name: "Mi Emprendimiento", industry, industryName, trialEndsAt: new Date(Date.now() + TRIAL_DAYS * 86_400_000) }],
       skipDuplicates: true,
     });
     if (count === 0) return;

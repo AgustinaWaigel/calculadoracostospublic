@@ -1,4 +1,4 @@
-import { GlobeIcon, AtSignIcon, MessageCircleIcon } from "lucide-react";
+import { AtSignIcon, GlobeIcon, MailIcon, MessageCircleIcon } from "lucide-react";
 import { CONTACTS, DEVELOPER, OWNER } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
@@ -6,6 +6,7 @@ const LINKS = [
   { ...CONTACTS.whatsapp, icon: MessageCircleIcon, name: "WhatsApp" },
   { ...CONTACTS.instagram, icon: AtSignIcon, name: "Instagram" },
   { ...CONTACTS.web, icon: GlobeIcon, name: "Web" },
+  { ...CONTACTS.email, icon: MailIcon, name: "Mail" },
 ];
 
 /** "Una herramienta de Alas de Ángel" con sus contactos (menú y pantallas de ingreso). */

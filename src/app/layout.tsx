@@ -7,6 +7,7 @@ import { ServiceWorkerRegister } from "@/components/layout/sw-register";
 import { getDolarRates } from "@/lib/dolar";
 import { getBusiness } from "@/server/costing";
 import { APP_NAME, OWNER } from "@/lib/brand";
+import { industryLabel } from "@/lib/industries";
 import { sessionUser } from "@/lib/auth/server";
 import { getAccess } from "@/lib/db";
 
@@ -39,7 +40,12 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <html lang="es-AR" suppressHydrationWarning className={`${karla.variable} ${londrina.variable}`}>
       <body className="antialiased">
         <Providers rates={rates} access={access} industry={business?.industry ?? "OTRO"} laborIsOwn={business?.laborIsOwn ?? true}>
-          <AppShell businessName={business?.name ?? APP_NAME} logoUrl={business?.logoUrl ?? null} userEmail={user?.email ?? null}>{children}</AppShell>
+          <AppShell
+            businessName={business?.name ?? APP_NAME}
+            logoUrl={business?.logoUrl ?? null}
+            userEmail={user?.email ?? null}
+            industryLabel={business ? industryLabel(business.industry, business.industryName) : "Costos y precios"}
+          >{children}</AppShell>
         </Providers>
         <ServiceWorkerRegister />
       </body>

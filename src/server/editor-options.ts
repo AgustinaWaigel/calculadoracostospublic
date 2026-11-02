@@ -57,8 +57,9 @@ export async function getEditorOptions(): Promise<EditorOptions> {
       packQuantity: s.packQuantity.toString(),
       unitCost: supplyUnitCost(s).toString(),
     })),
-    profiles: profiles.map((p) => ({ id: p.id, name: p.name, hourlyRate: p.hourlyRate.toString(), isOwn: p.isOwn, color: p.color })),
-    machines: machines.map((m) => ({
+    // Plan gratis: sin perfiles ni máquinas, el editor calcula solo materiales.
+    profiles: (ctx.materialsOnly ? [] : profiles).map((p) => ({ id: p.id, name: p.name, hourlyRate: p.hourlyRate.toString(), isOwn: p.isOwn, color: p.color })),
+    machines: (ctx.materialsOnly ? [] : machines).map((m) => ({
       id: m.id,
       name: m.name,
       price: m.price.toString(),

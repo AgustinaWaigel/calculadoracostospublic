@@ -187,6 +187,7 @@ export const businessSchema = z
   .object({
     name: requiredText("El nombre del emprendimiento", 80),
     industry: z.enum(industries),
+    industryName: optionalText(60),
     logoUrl: z
       .string()
       .optional()

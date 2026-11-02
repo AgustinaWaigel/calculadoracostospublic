@@ -7,4 +7,5 @@ export const CONTACTS = {
   whatsapp: { label: "343 404-2410", href: "https://wa.me/5493434042410" },
   web: { label: "alasdeangel.com.ar", href: "https://alasdeangel.com.ar" },
   instagram: { label: "@alasdeangel.papeleria", href: "https://instagram.com/alasdeangel.papeleria" },
+  email: { label: "agustinawaigel0@gmail.com", href: "mailto:agustinawaigel0@gmail.com" },
 } as const;

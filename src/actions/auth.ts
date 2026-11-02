@@ -77,7 +77,11 @@ export async function signup(_: AuthState, form: FormData): Promise<AuthState> {
   const { data, error } = await supabase.auth.signUp({
     email: email.data,
     password: password.data,
-    options: { emailRedirectTo: `${await appUrl()}/auth/confirmar`, data: { rubro }, ...captchaToken(form) },
+    options: {
+      emailRedirectTo: `${await appUrl()}/auth/confirmar`,
+      data: { rubro, rubroNombre: rubro === "OTRO" ? String(form.get("rubroNombre") ?? "").trim().slice(0, 60) : "" },
+      ...captchaToken(form),
+    },
   });
   if (error) {
     if (isCaptchaError(error)) return { email: rawEmail, error: CAPTCHA_FAILED };

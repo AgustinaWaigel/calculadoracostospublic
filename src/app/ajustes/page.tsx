@@ -39,6 +39,7 @@ export default async function AjustesPage() {
             instagram: business.instagram ?? "",
             address: business.address ?? "",
             industry: business.industry,
+            industryName: business.industryName ?? "",
             taxCondition: business.taxCondition,
             ivaPercent: toInputString(business.ivaPercent),
             monthlyUnitsEstimate: business.monthlyUnitsEstimate,
