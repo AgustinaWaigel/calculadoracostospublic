@@ -7,6 +7,7 @@ import {
   PrinterIcon,
   ReceiptIcon,
   ShapesIcon,
+  SettingsIcon,
   ShoppingBagIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -33,6 +34,15 @@ interface Step {
 }
 
 const STEPS: Step[] = [
+  {
+    href: "/ajustes",
+    section: "Ajustes",
+    icon: SettingsIcon,
+    accent: "neutro",
+    title: "Completá los datos de tu emprendimiento",
+    body: "Nombre, logo, WhatsApp, Instagram y tu condición frente a ARCA (monotributo o responsable inscripto). Es lo que va a salir en tus presupuestos.",
+    example: "Si sos responsable inscripto, la app suma el IVA a tus precios; si sos monotributista, no.",
+  },
   {
     href: "/insumos",
     section: "Insumos",
