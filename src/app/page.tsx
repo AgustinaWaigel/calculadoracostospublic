@@ -61,6 +61,13 @@ export default async function InicioPage() {
 
   const prints = INDUSTRIES[business.industry].print;
   const steps = [
+    {
+      // El nombre arranca como "Mi Emprendimiento": si lo cambió (o cargó contacto o logo), ya lo completó.
+      done: business.name !== "Mi Emprendimiento" || Boolean(business.phone || business.logoUrl),
+      href: "/ajustes",
+      title: "Completá los datos de tu emprendimiento",
+      text: "Nombre, logo, WhatsApp y si sos monotributista: salen en tus presupuestos y en el PDF.",
+    },
     { done: supplies.length > 0, href: "/insumos/nuevo", title: "Cargá tus insumos", text: "Lo que comprás para producir: papel, tinta, pouch, anillos… con lo que pagaste y cuánto trae." },
     { done: profiles > 0, href: "/mano-de-obra", title: "Poné cuánto vale tu hora", text: "Tu tiempo también es un costo. La app te ayuda a calcularlo." },
     { done: fixedCosts > 0, href: "/costos-fijos", title: "Sumá tus gastos fijos", text: "Alquiler, luz, internet, monotributo: se reparten entre lo que producís." },
