@@ -21,6 +21,7 @@ import { useAction } from "@/components/shared/use-action";
 import { saveLaborProfile } from "@/actions/labor";
 import { laborProfileSchema, type LaborProfileInput } from "@/lib/schemas";
 import { toInputString } from "@/lib/money";
+import { useLaborIsOwn } from "@/components/providers";
 import type { z } from "zod";
 
 const COLORS = ["#6366f1", "#f59e0b", "#10b981", "#ef4444", "#0ea5e9", "#a855f7"];
@@ -40,13 +41,14 @@ export function LaborProfileDialog({
   suggestedRate?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const laborIsOwn = useLaborIsOwn();
   const form = useForm<LaborProfileInput, unknown, z.output<typeof laborProfileSchema>>({
     resolver: zodResolver(laborProfileSchema),
     values: {
       id: profile?.id,
       name: profile?.name ?? "",
       hourlyRate: toInputString(profile?.hourlyRate ?? suggestedRate ?? ""),
-      isOwn: profile?.isOwn ?? true,
+      isOwn: profile?.isOwn ?? laborIsOwn,
       color: profile?.color ?? COLORS[0],
     },
   });

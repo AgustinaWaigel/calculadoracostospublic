@@ -12,11 +12,12 @@ import { Field } from "@/components/shared/ui-bits";
 import { Money } from "@/components/shared/money";
 import { useAction } from "@/components/shared/use-action";
 import { saveSupply } from "@/actions/supplies";
+import { useIndustry } from "@/components/providers";
+import { INDUSTRIES } from "@/lib/industries";
 import { supplySchema, type SupplyData, type SupplyInput } from "@/lib/schemas";
 import { supplyUnitCost } from "@/lib/calc/supply";
 import { parseMoneyInput, toInputString } from "@/lib/money";
 
-const PURCHASE_UNITS = ["paquete", "rollo", "resma", "caja", "hoja", "unidad", "litro", "kg", "metro"];
 
 export interface SupplyFormDefaults {
   id?: string;
@@ -33,6 +34,7 @@ export interface SupplyFormDefaults {
 
 export function SupplyForm({ defaults, categories }: { defaults?: SupplyFormDefaults; categories: string[] }) {
   const router = useRouter();
+  const { examples, units } = INDUSTRIES[useIndustry()];
   const form = useForm<SupplyInput, unknown, SupplyData>({
     resolver: zodResolver(supplySchema),
     defaultValues: {
@@ -82,7 +84,7 @@ export function SupplyForm({ defaults, categories }: { defaults?: SupplyFormDefa
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <Field label="Nombre" htmlFor="name" error={errors.name?.message} className="sm:col-span-2">
-              <Input id="name" placeholder="Ej: Pouch plastificado A4" {...register("name")} />
+              <Input id="name" placeholder={examples.supply} {...register("name")} />
             </Field>
             <Field label="Tipo" error={errors.kind?.message}>
               <Controller
@@ -102,7 +104,7 @@ export function SupplyForm({ defaults, categories }: { defaults?: SupplyFormDefa
               />
             </Field>
             <Field label="Categoría" htmlFor="category" error={errors.category?.message}>
-              <Input id="category" list="supply-categories" placeholder="Papel, Tintas…" {...register("category")} />
+              <Input id="category" list="supply-categories" placeholder={examples.category} {...register("category")} />
               <datalist id="supply-categories">
                 {categories.map((c) => (
                   <option key={c} value={c} />
@@ -127,12 +129,12 @@ export function SupplyForm({ defaults, categories }: { defaults?: SupplyFormDefa
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Precio del paquete" htmlFor="packPrice" error={errors.packPrice?.message}>
-                <Input id="packPrice" inputMode="decimal" placeholder="28.949" {...register("packPrice")} />
+                <Input id="packPrice" inputMode="decimal" placeholder={examples.packPrice} {...register("packPrice")} />
               </Field>
               <Field label="Unidad de compra" htmlFor="purchaseUnit" error={errors.purchaseUnit?.message}>
                 <Input id="purchaseUnit" list="purchase-units" {...register("purchaseUnit")} />
                 <datalist id="purchase-units">
-                  {PURCHASE_UNITS.map((u) => (
+                  {units.map((u) => (
                     <option key={u} value={u} />
                   ))}
                 </datalist>
@@ -141,7 +143,7 @@ export function SupplyForm({ defaults, categories }: { defaults?: SupplyFormDefa
                 label="Cantidad por paquete"
                 htmlFor="packQuantity"
                 error={errors.packQuantity?.message}
-                hint="Ej: un pack de 100 pouches → 100"
+                hint={examples.pack}
               >
                 <Input id="packQuantity" inputMode="decimal" {...register("packQuantity")} />
               </Field>
@@ -149,7 +151,7 @@ export function SupplyForm({ defaults, categories }: { defaults?: SupplyFormDefa
                 label="Unidad de uso"
                 htmlFor="usageUnit"
                 error={errors.usageUnit?.message}
-                hint="Cómo lo contás en la receta: hoja, pouch, ml…"
+                hint={`Cómo lo contás en la receta: ${examples.usage}`}
               >
                 <Input id="usageUnit" {...register("usageUnit")} />
               </Field>

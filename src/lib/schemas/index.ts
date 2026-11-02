@@ -11,6 +11,7 @@ import {
 } from "./common";
 
 export * from "./common";
+import { industries } from "@/lib/industries";
 
 // ───────── Enums compartidos (espejo de Prisma) ─────────
 
@@ -185,6 +186,7 @@ export type ProductData = z.output<typeof productSchema>;
 export const businessSchema = z
   .object({
     name: requiredText("El nombre del emprendimiento", 80),
+    industry: z.enum(industries),
     logoUrl: z
       .string()
       .optional()

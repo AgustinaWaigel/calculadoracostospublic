@@ -8,6 +8,7 @@ import { BusinessForm } from "@/components/settings/business-form";
 import { ChannelDialog } from "@/components/settings/channel-dialog";
 import { VolumeTiersForm } from "@/components/settings/volume-tiers-form";
 import { BackupCard } from "@/components/settings/backup-card";
+import { LaborDefaultCard } from "@/components/settings/labor-default-card";
 import { deleteChannel } from "@/actions/settings";
 import { userDb } from "@/lib/db";
 import { getBusiness } from "@/server/costing";
@@ -18,10 +19,11 @@ export const metadata = { title: "Ajustes" };
 
 export default async function AjustesPage() {
   const db = await userDb();
-  const [business, channels, tiers] = await Promise.all([
+  const [business, channels, tiers, profiles] = await Promise.all([
     getBusiness(),
     db.salesChannel.findMany({ orderBy: { sortOrder: "asc" } }),
     db.volumeTier.findMany({ orderBy: { minQuantity: "asc" } }),
+    db.laborProfile.count(),
   ]);
 
   return (
@@ -36,6 +38,7 @@ export default async function AjustesPage() {
             email: business.email ?? "",
             instagram: business.instagram ?? "",
             address: business.address ?? "",
+            industry: business.industry,
             taxCondition: business.taxCondition,
             ivaPercent: toInputString(business.ivaPercent),
             monthlyUnitsEstimate: business.monthlyUnitsEstimate,
@@ -44,6 +47,7 @@ export default async function AjustesPage() {
             roundTo: toInputString(business.roundTo),
             quoteValidityDays: business.quoteValidityDays }}
         />
+        <LaborDefaultCard isOwn={business.laborIsOwn} profiles={profiles} />
 
         <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
           <Card id="canales" className="gap-0 self-start py-0">

@@ -26,6 +26,8 @@ import { saveProduct } from "@/actions/products";
 import { productSchema, type ProductData, type ProductInput } from "@/lib/schemas";
 import { formatMoney, formatNumber, formatPercent, toInputString } from "@/lib/money";
 import { cn } from "@/lib/utils";
+import { useIndustry } from "@/components/providers";
+import { INDUSTRIES } from "@/lib/industries";
 import type { EditorOptions, ProductFormValues } from "./types";
 
 /** Atajos de "tamaño para los fijos": cuántas unidades normales equivale el producto. */
@@ -85,6 +87,7 @@ export function ProductEditor({ options, defaults }: { options: EditorOptions; d
   // Alta rápida: para qué fila se crea (null = cerrado).
   const [newSupply, setNewSupply] = useState<{ row: number; name: string } | null>(null);
   const [newPrint, setNewPrint] = useState<{ row: number } | null>(null);
+  const { print: prints, examples } = INDUSTRIES[useIndustry()];
   function pickCreated(row: number, supply: CreatedSupply) {
     setCreated((list) => [...list.filter((s) => s.id !== supply.id), supply]);
     if (row >= supplies.fields.length) supplies.append({ supplyId: supply.id, quantity: "1" });
@@ -191,7 +194,7 @@ export function ProductEditor({ options, defaults }: { options: EditorOptions; d
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <Field label="Nombre" htmlFor="p-name" error={errors.name?.message}>
-              <Input id="p-name" placeholder="Ej: Foto plastificada A4" {...register("name")} />
+              <Input id="p-name" placeholder={examples.product} {...register("name")} />
             </Field>
             <Field label="Categoría" htmlFor="p-category" error={errors.category?.message}>
               <Input id="p-category" list="product-categories" placeholder="Opcional" {...register("category")} />
@@ -383,18 +386,20 @@ export function ProductEditor({ options, defaults }: { options: EditorOptions; d
                             >
                               <PlusIcon /> {search ? `Crear “${search}”` : "Crear insumo nuevo"}
                             </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="justify-start"
-                              onClick={() => {
-                                close();
-                                setNewPrint({ row: i });
-                              }}
-                            >
-                              <PrinterIcon /> Calcular una impresión
-                            </Button>
+                            {prints && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="justify-start"
+                                onClick={() => {
+                                  close();
+                                  setNewPrint({ row: i });
+                                }}
+                              >
+                                <PrinterIcon /> Calcular una impresión
+                              </Button>
+                            )}
                           </>
                         )}
                         className="col-span-3 sm:col-span-1"
@@ -437,9 +442,11 @@ export function ProductEditor({ options, defaults }: { options: EditorOptions; d
               <Button type="button" variant="ghost" size="sm" onClick={() => setNewSupply({ row: freeRow(), name: "" })}>
                 <PlusIcon /> Crear insumo nuevo
               </Button>
-              <Button type="button" variant="ghost" size="sm" onClick={() => setNewPrint({ row: freeRow() })}>
-                <PrinterIcon /> Agregar impresión
-              </Button>
+              {prints && (
+                <Button type="button" variant="ghost" size="sm" onClick={() => setNewPrint({ row: freeRow() })}>
+                  <PrinterIcon /> Agregar impresión
+                </Button>
+              )}
             </div>
             <QuickSupplyDialog
               open={newSupply !== null}

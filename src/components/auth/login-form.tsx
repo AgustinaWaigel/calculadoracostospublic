@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/shared/ui-bits";
 import { Captcha } from "./captcha";
+import { INDUSTRIES, industries } from "@/lib/industries";
 import { login, requestPasswordReset, signup, updatePassword, type AuthState } from "@/actions/auth";
 
 function Feedback({ state }: { state: AuthState }) {
@@ -81,6 +82,23 @@ export function SignupForm() {
   if (state?.notice) return <Feedback state={state} />;
   return (
     <form action={action} className="grid gap-4">
+      <fieldset className="grid gap-2">
+        <legend className="mb-1 text-sm font-medium">¿A qué te dedicás?</legend>
+        <div className="grid gap-1.5">
+          {industries.map((i, n) => (
+            <label
+              key={i}
+              className="flex cursor-pointer items-start gap-3 rounded-lg border p-2.5 has-checked:border-primary has-checked:bg-primary/5"
+            >
+              <input type="radio" name="rubro" value={i} required defaultChecked={n === 0} className="mt-1 accent-primary" />
+              <span className="text-sm">
+                <span className="block font-medium">{INDUSTRIES[i].label}</span>
+                <span className="block text-muted-foreground">{INDUSTRIES[i].hint}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
       <EmailField id="signup-email" defaultValue={state?.email} />
       <NewPasswordFields prefix="signup" />
       <Captcha resetKey={state} />

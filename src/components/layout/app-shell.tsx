@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { CalculatorIcon, LockIcon, LogOutIcon, MenuIcon, SparklesIcon } from "lucide-react";
+import { CalculatorIcon, LogOutIcon, MenuIcon, SparklesIcon } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { logout } from "@/actions/auth";
 import { PUBLIC_PATHS } from "@/lib/auth/config";
-import { useAccess } from "@/components/providers";
+import { useAccess, useIndustry } from "@/components/providers";
+import { INDUSTRIES } from "@/lib/industries";
 import { NAV_ITEMS, isActive } from "./nav-items";
 import { ThemeToggle } from "./theme-toggle";
 import { CurrencySwitcher } from "./currency-switcher";
@@ -43,10 +44,10 @@ function Brand({ name, logoUrl }: { name: string; logoUrl: string | null }) {
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
-  const simple = useAccess()?.tier === "SIMPLE";
+  const prints = INDUSTRIES[useIndustry()].print;
   return (
     <nav className="grid gap-0.5" aria-label="Secciones">
-      {NAV_ITEMS.map((item) => {
+      {NAV_ITEMS.filter((item) => prints || !item.print).map((item) => {
         const active = isActive(pathname, item.href);
         return (
           <Link
@@ -63,7 +64,6 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
           >
             <item.icon className="size-4 shrink-0" />
             {item.label}
-            {simple && item.complete && <LockIcon className="ml-auto size-3.5 opacity-60" aria-label="Plan Completo" />}
           </Link>
         );
       })}
@@ -101,8 +101,8 @@ function PlanNotice() {
   const pathname = usePathname();
   if (!access || pathname === "/plan") return null;
   let text: string | null = null;
-  if (access.kind === "trial") text = `Prueba gratis: te ${access.daysLeft === 1 ? "queda 1 día" : `quedan ${access.daysLeft} días`} con todo el plan Completo.`;
-  if (access.kind === "expired") text = "Tu prueba terminó: podés ver tus datos, pero para cargar o editar necesitás un plan.";
+  if (access.kind === "trial") text = `Prueba gratis: te ${access.daysLeft === 1 ? "queda 1 día" : `quedan ${access.daysLeft} días`} con todo.`;
+  if (access.kind === "expired") text = "Tu prueba terminó: podés ver tus datos, pero para cargar o editar necesitás suscribirte.";
   if (access.ending) text = `Cancelaste tu suscripción: te ${access.daysLeft === 1 ? "queda 1 día" : `quedan ${access.daysLeft} días`} de lo que ya pagaste.`;
   if (!text) return null;
   return (
@@ -110,7 +110,7 @@ function PlanNotice() {
       <p className={cn("rounded-lg px-3 py-2", access.kind === "expired" ? "bg-destructive/10 text-destructive" : "bg-halo/25")}>
         {text}{" "}
         <Link href="/plan" className="font-semibold underline underline-offset-4">
-          {access.kind === "trial" ? "Elegir plan" : "Ver planes"}
+          {access.kind === "trial" ? "Suscribirme" : "Ver el plan"}
         </Link>
       </p>
     </div>

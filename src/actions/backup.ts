@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getAccess, rawDb, userDb } from "@/lib/db";
-import { writeBlockedMessage } from "@/lib/billing";
+import { WRITE_BLOCKED } from "@/lib/billing";
 import { requireUserId } from "@/lib/auth/server";
 import { parseCsv } from "@/lib/csv";
 import { D } from "@/lib/money";
@@ -130,9 +130,8 @@ function adopt(d: z.infer<typeof backupSchema>["data"], userId: string) {
 /** Restaura un backup JSON completo (reemplaza todos los datos de la cuenta). */
 export async function importBackup(json: string): Promise<ActionResult<{ counts: Record<string, number> }>> {
   const userId = await requireUserId();
-  // Restaurar escribe todo (va con el cliente sin filtro): pide el plan Completo.
-  const { tier } = await getAccess(userId);
-  if (tier !== "COMPLETE") return fail(writeBlockedMessage(tier === "SIMPLE" ? "SIMPLE" : "NONE"));
+  // Restaurar escribe todo con el cliente sin filtro: el plan se revisa acá.
+  if ((await getAccess(userId)).tier === "NONE") return fail(WRITE_BLOCKED);
   let raw: unknown;
   try {
     raw = JSON.parse(json);

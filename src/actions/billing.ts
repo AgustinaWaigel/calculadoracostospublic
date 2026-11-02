@@ -6,11 +6,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getAccess, rawDb } from "@/lib/db";
 import { requireUserId } from "@/lib/auth/server";
-import { PLANS, type PaidPlan } from "@/lib/billing";
 import {
   MercadoPagoError,
   cancelSubscription as mpCancel,
-  changeSubscriptionPlan,
   createSubscription,
   syncSubscription,
 } from "@/server/mercadopago";
@@ -24,38 +22,30 @@ async function appUrl() {
 }
 
 const subscribeSchema = z.object({
-  plan: z.enum(["SIMPLE", "COMPLETE"]),
   email: z.string().trim().toLowerCase().email("Revisá el mail"),
 });
 
-/** Suscribirse (o cambiar de plan si ya tiene una suscripción activa). */
+/** Suscribirse: crea la suscripción en Mercado Pago y manda a pagar. */
 export async function subscribe(_: BillingState, form: FormData): Promise<BillingState> {
   const userId = await requireUserId();
-  const parsed = subscribeSchema.safeParse({ plan: form.get("plan"), email: form.get("email") });
+  const parsed = subscribeSchema.safeParse({ email: form.get("email") });
   if (!parsed.success) return { error: parsed.error.issues[0].message };
-  const plan: PaidPlan = parsed.data.plan;
 
   const business = await rawDb.business.findUnique({
     where: { id: userId },
     select: { plan: true, mpPreapprovalId: true, subscriptionStatus: true },
   });
   if (!business) return { error: "Entrá primero al inicio para terminar de armar tu cuenta." };
-  if (business.plan === "FOUNDER") return { notice: "Tu cuenta es fundadora: ya tenés el plan Completo gratis." };
+  if (business.plan === "FOUNDER") return { notice: "Tu cuenta es fundadora: ya tenés todo gratis." };
+  if (business.subscriptionStatus === "AUTHORIZED") return { notice: "Ya tenés la suscripción activa." };
 
   let checkout: string;
   try {
-    if (business.mpPreapprovalId && business.subscriptionStatus === "AUTHORIZED") {
-      if (business.plan === plan) return { notice: `Ya tenés el plan ${PLANS[plan].name}.` };
-      await changeSubscriptionPlan(business.mpPreapprovalId, plan);
-      await rawDb.business.update({ where: { id: userId }, data: { plan } });
-      revalidatePath("/", "layout");
-      return { notice: `Listo: pasaste al plan ${PLANS[plan].name}. El próximo débito ya va con el precio nuevo.` };
-    }
-    const sub = await createSubscription({ userId, plan, email: parsed.data.email, backUrl: `${await appUrl()}/plan?volviste=1` });
+    const sub = await createSubscription({ userId, email: parsed.data.email, backUrl: `${await appUrl()}/plan?volviste=1` });
     if (!sub.init_point) return { error: "Mercado Pago no devolvió el link de pago. Probá de nuevo." };
     await rawDb.business.update({
       where: { id: userId },
-      data: { mpPreapprovalId: sub.id, subscriptionStatus: "PENDING", plan },
+      data: { mpPreapprovalId: sub.id, subscriptionStatus: "PENDING", plan: "COMPLETE" },
     });
     checkout = sub.init_point;
   } catch (e) {
@@ -78,7 +68,7 @@ export async function cancelMySubscription(): Promise<BillingState> {
   const access = await getAccess(userId);
   return {
     notice: access.daysLeft
-      ? `Suscripción cancelada. Seguís con tu plan ${access.daysLeft} días más (lo que ya pagaste).`
+      ? `Suscripción cancelada. Seguís con acceso ${access.daysLeft} días más (lo que ya pagaste).`
       : "Suscripción cancelada.",
   };
 }

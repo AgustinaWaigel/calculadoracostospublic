@@ -14,9 +14,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/ui-bits";
 import { ACCENTS, type Accent } from "@/components/layout/nav-items";
 import { CONTACTS } from "@/lib/brand";
-import { PLANS, TRIAL_DAYS } from "@/lib/billing";
+import { PLAN, TRIAL_DAYS } from "@/lib/billing";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
+import { INDUSTRIES } from "@/lib/industries";
+import { getBusiness } from "@/server/costing";
 
 export const metadata = { title: "Cómo se usa" };
 
@@ -125,9 +127,8 @@ const FAQ: { q: string; a: React.ReactNode }[] = [
     q: "¿Cuánto cuesta?",
     a: (
       <>
-        Las cuentas nuevas tienen {TRIAL_DAYS} días gratis con todo. Después: plan Simple ({formatMoney(PLANS.SIMPLE.price, "ARS", 0)}/mes:
-        insumos, productos, mano de obra, costos fijos e impresión) o Completo ({formatMoney(PLANS.COMPLETE.price, "ARS", 0)}/mes: además
-        presupuestos, ventas e inversiones). Se paga con Mercado Pago y se cancela cuando quieras desde{" "}
+        Las cuentas nuevas tienen {TRIAL_DAYS} días gratis con todo. Después es un solo plan de{" "}
+        {formatMoney(PLAN.price, "ARS", 0)} por mes con todo incluido. Se paga con Mercado Pago y se cancela cuando quieras desde{" "}
         <Link href="/plan" className="underline underline-offset-4">Mi plan</Link>.
       </>
     ),
@@ -138,7 +139,8 @@ const FAQ: { q: string; a: React.ReactNode }[] = [
   },
 ];
 
-export default function AyudaPage() {
+export default async function AyudaPage() {
+  const business = await getBusiness();
   return (
     <>
       <PageHeader title="Cómo se usa" description="En este orden, y en un rato tenés el precio real de lo que vendés." />
@@ -167,20 +169,22 @@ export default function AyudaPage() {
           ))}
         </ol>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PrinterIcon className="size-5 text-primary" /> ¿Imprimís en tu casa?
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-2 text-sm">
-            <p>
-              En <Link href="/impresion" className="font-semibold text-primary underline-offset-4 hover:underline">Impresión</Link> cargás
-              el precio de tus botellas de tinta y cuántas páginas rinden (está en la caja). Elegís cuánto se llena la hoja y te dice
-              cuánto te sale cada impresión. Después lo guardás como insumo y lo usás en tus productos.
-            </p>
-          </CardContent>
-        </Card>
+        {INDUSTRIES[business.industry].print && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <PrinterIcon className="size-5 text-primary" /> ¿Imprimís en tu casa?
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2 text-sm">
+              <p>
+                En <Link href="/impresion" className="font-semibold text-primary underline-offset-4 hover:underline">Impresión</Link> cargás
+                el precio de tus botellas de tinta y cuántas páginas rinden (está en la caja). Elegís cuánto se llena la hoja y te dice
+                cuánto te sale cada impresión. Después lo guardás como insumo y lo usás en tus productos.
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         <section className="grid gap-3">
           <h2 className="font-display text-2xl tracking-wide uppercase">Preguntas frecuentes</h2>

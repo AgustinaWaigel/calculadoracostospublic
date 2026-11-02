@@ -15,6 +15,7 @@ import { useAction } from "@/components/shared/use-action";
 import { MarginTooltip } from "@/components/products/margin-tooltip";
 import { saveBusiness } from "@/actions/settings";
 import { businessSchema, TAX_LABELS, taxConditions, type BusinessInput } from "@/lib/schemas";
+import { INDUSTRIES, industries } from "@/lib/industries";
 
 /** Achica el logo a 256px y lo guarda como data URL (sirve para el PDF sin depender de un storage). */
 async function resizeImage(file: File, max = 256): Promise<string> {
@@ -91,6 +92,26 @@ export function BusinessForm({ defaults }: { defaults: BusinessInput }) {
           </div>
           <Field label="Nombre" htmlFor="b-name" error={errors.name?.message} className="sm:col-span-2">
             <Input id="b-name" {...register("name")} />
+          </Field>
+          <Field label="Rubro" error={errors.industry?.message} hint="Cambia los ejemplos y qué secciones ves (la impresión es solo para papelería)." className="sm:col-span-2">
+            <Controller
+              control={control}
+              name="industry"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger className="w-full" aria-label="Rubro">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {industries.map((i) => (
+                      <SelectItem key={i} value={i}>
+                        {INDUSTRIES[i].label} · <span className="text-muted-foreground">{INDUSTRIES[i].hint}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </Field>
           <Field label="WhatsApp / teléfono" htmlFor="b-phone" error={errors.phone?.message}>
             <Input id="b-phone" type="tel" {...register("phone")} />

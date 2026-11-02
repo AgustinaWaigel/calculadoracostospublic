@@ -18,10 +18,11 @@ import { Money } from "@/components/shared/money";
 import { ACCENTS, type Accent } from "@/components/layout/nav-items";
 import { getAllProductsWithPricing, getBusiness } from "@/server/costing";
 import { getSales } from "@/server/sales";
-import { currentAccess, userDb } from "@/lib/db";
+import { userDb } from "@/lib/db";
 import { daysSince, isPriceStale } from "@/lib/calc/supply";
 import { sum } from "@/lib/money";
 import { cn } from "@/lib/utils";
+import { INDUSTRIES } from "@/lib/industries";
 
 export const metadata = { title: "Inicio" };
 
@@ -31,23 +32,21 @@ interface Action {
   text: string;
   icon: LucideIcon;
   accent: Accent;
-  complete?: boolean;
+  print?: boolean;
 }
 
 /** Lo que la gente viene a hacer, dicho como lo diría ella. */
 const ACTIONS: Action[] = [
   { href: "/productos/nuevo", title: "Calcular el precio de un producto", text: "Cargás qué lleva y te dice cuánto cobrar.", icon: ShapesIcon, accent: "lavanda" },
-  { href: "/presupuestos/nuevo", title: "Pasarle un presupuesto a un cliente", text: "En PDF o por WhatsApp, con tus precios.", icon: FileTextIcon, accent: "amanecer", complete: true },
-  { href: "/ventas/nueva", title: "Anotar una venta", text: "Para saber cuánto vendiste y ganaste en el mes.", icon: ShoppingBagIcon, accent: "menta", complete: true },
+  { href: "/presupuestos/nuevo", title: "Pasarle un presupuesto a un cliente", text: "En PDF o por WhatsApp, con tus precios.", icon: FileTextIcon, accent: "amanecer" },
+  { href: "/ventas/nueva", title: "Anotar una venta", text: "Para saber cuánto vendiste y ganaste en el mes.", icon: ShoppingBagIcon, accent: "menta" },
   { href: "/insumos", title: "Actualizar el precio de un insumo", text: "Si subió el papel, tus productos se recalculan solos.", icon: PackageIcon, accent: "menta" },
-  { href: "/impresion", title: "Saber cuánto me sale imprimir", text: "La tinta por hoja según tus botellas.", icon: PrinterIcon, accent: "menta" },
+  { href: "/impresion", title: "Saber cuánto me sale imprimir", text: "La tinta por hoja según tus botellas.", icon: PrinterIcon, accent: "menta", print: true },
   { href: "/calculadora", title: "Hacer una cuenta rápida", text: "Un precio al toque, sin guardar nada.", icon: CalculatorIcon, accent: "halo" },
 ];
 
 export default async function InicioPage() {
   const db = await userDb();
-  const access = await currentAccess();
-  const fullPlan = access.tier !== "SIMPLE";
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
   const [business, { items }, supplies, profiles, fixedCosts, quotes, monthSales] = await Promise.all([
@@ -56,16 +55,17 @@ export default async function InicioPage() {
     db.supply.findMany({ select: { id: true, name: true, priceUpdatedAt: true }, orderBy: { priceUpdatedAt: "asc" } }),
     db.laborProfile.count(),
     db.fixedCost.count(),
-    fullPlan ? db.quote.count() : Promise.resolve(0),
-    fullPlan ? getSales({ date: { gte: monthStart } }) : Promise.resolve([]),
+    db.quote.count(),
+    getSales({ date: { gte: monthStart } }),
   ]);
 
+  const prints = INDUSTRIES[business.industry].print;
   const steps = [
     { done: supplies.length > 0, href: "/insumos/nuevo", title: "Cargá tus insumos", text: "Lo que comprás para producir: papel, tinta, pouch, anillos… con lo que pagaste y cuánto trae." },
     { done: profiles > 0, href: "/mano-de-obra", title: "Poné cuánto vale tu hora", text: "Tu tiempo también es un costo. La app te ayuda a calcularlo." },
     { done: fixedCosts > 0, href: "/costos-fijos", title: "Sumá tus gastos fijos", text: "Alquiler, luz, internet, monotributo: se reparten entre lo que producís." },
     { done: items.length > 0, href: "/productos/nuevo", title: "Armá tu primer producto", text: "Elegís los insumos y los minutos de trabajo, y te sugiere el precio." },
-    ...(fullPlan ? [{ done: quotes > 0, href: "/presupuestos/nuevo", title: "Mandá tu primer presupuesto", text: "Con tus precios, en PDF o directo por WhatsApp." }] : []),
+    { done: quotes > 0, href: "/presupuestos/nuevo", title: "Mandá tu primer presupuesto", text: "Con tus precios, en PDF o directo por WhatsApp." },
   ];
   const doneCount = steps.filter((s) => s.done).length;
 
@@ -87,7 +87,7 @@ export default async function InicioPage() {
 
       {/* Lo que vino a hacer */}
       <nav className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-label="¿Qué querés hacer?">
-        {ACTIONS.filter((a) => fullPlan || !a.complete).map((a) => (
+        {ACTIONS.filter((a) => prints || !a.print).map((a) => (
           <Link
             key={a.href}
             href={a.href}
@@ -148,7 +148,7 @@ export default async function InicioPage() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* El mes, en una frase */}
-        {fullPlan && monthSales.length > 0 && (
+        {monthSales.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle>Tu {monthName}</CardTitle>

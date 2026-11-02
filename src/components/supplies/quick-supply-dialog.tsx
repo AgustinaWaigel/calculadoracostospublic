@@ -18,6 +18,8 @@ import { Field } from "@/components/shared/ui-bits";
 import { Money } from "@/components/shared/money";
 import { useAction } from "@/components/shared/use-action";
 import { saveSupply } from "@/actions/supplies";
+import { useIndustry } from "@/components/providers";
+import { INDUSTRIES } from "@/lib/industries";
 import { supplySchema, type SupplyData, type SupplyInput } from "@/lib/schemas";
 import { supplyUnitCost } from "@/lib/calc/supply";
 import { parseMoneyInput } from "@/lib/money";
@@ -27,8 +29,8 @@ import type { EditorOptions } from "@/components/products/types";
 export type CreatedSupply = EditorOptions["supplies"][number];
 
 const KINDS = [
-  { value: "MATERIAL", label: "Material", hint: "Papel, pouch, cinta…" },
-  { value: "SERVICE", label: "Servicio", hint: "Impresión, envío, corte…" },
+  { value: "MATERIAL", label: "Material", hint: "Lo que comprás para producir" },
+  { value: "SERVICE", label: "Servicio", hint: "Lo que pagás que te hagan" },
 ] as const;
 
 /**
@@ -46,6 +48,7 @@ export function QuickSupplyDialog({
   defaultName?: string;
   onCreated: (supply: CreatedSupply) => void;
 }) {
+  const { examples, units } = INDUSTRIES[useIndustry()];
   const form = useForm<SupplyInput, unknown, SupplyData>({
     resolver: zodResolver(supplySchema),
     defaultValues: blank(defaultName),
@@ -136,17 +139,17 @@ export function QuickSupplyDialog({
             <Input
               id="qs-name"
               autoFocus
-              placeholder={kind === "SERVICE" ? "Ej: Impresión A4 color" : "Ej: Papel fotográfico A4"}
+              placeholder={kind === "SERVICE" ? examples.service : examples.supply}
               {...register("name")}
             />
           </Field>
           <Field label="Precio" htmlFor="qs-price" error={errors.packPrice?.message}>
             <Input id="qs-price" inputMode="decimal" placeholder="$" {...register("packPrice")} />
           </Field>
-          <Field label="Viene por" htmlFor="qs-purchase" error={errors.purchaseUnit?.message} hint="paquete, resma, rollo…">
+          <Field label="Viene por" htmlFor="qs-purchase" error={errors.purchaseUnit?.message} hint={units.slice(0, 3).join(", ") + "…"}>
             <Input id="qs-purchase" list="qs-purchase-units" {...register("purchaseUnit")} />
             <datalist id="qs-purchase-units">
-              {["paquete", "resma", "rollo", "caja", "hoja", "unidad", "metro", "litro"].map((u) => (
+              {units.map((u) => (
                 <option key={u} value={u} />
               ))}
             </datalist>
@@ -154,7 +157,7 @@ export function QuickSupplyDialog({
           <Field label="Cantidad que trae" htmlFor="qs-qty" error={errors.packQuantity?.message}>
             <Input id="qs-qty" inputMode="decimal" {...register("packQuantity")} />
           </Field>
-          <Field label="La usás por" htmlFor="qs-usage" error={errors.usageUnit?.message} hint="hoja, unidad, metro…">
+          <Field label="La usás por" htmlFor="qs-usage" error={errors.usageUnit?.message} hint={examples.usage}>
             <Input id="qs-usage" {...register("usageUnit")} />
           </Field>
         </form>

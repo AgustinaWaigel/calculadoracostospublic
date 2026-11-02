@@ -1,7 +1,7 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { rawDb } from "@/lib/db";
-import { PLANS, planFromAmount, statusFromMp, type PaidPlan } from "@/lib/billing";
+import { PLAN, statusFromMp } from "@/lib/billing";
 
 /**
  * Suscripciones de Mercado Pago ("preapproval"): débito automático todos los meses.
@@ -19,7 +19,6 @@ interface Preapproval {
   external_reference?: string;
   init_point?: string;
   next_payment_date?: string;
-  auto_recurring?: { transaction_amount?: number };
 }
 
 async function mp<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -46,13 +45,12 @@ function mpMessage(message?: string) {
   return "Mercado Pago no respondió bien. Probá de nuevo en un rato.";
 }
 
-const reason = (plan: PaidPlan) => `Calculadora de Insumos · Plan ${PLANS[plan].name}`;
 
-export async function createSubscription(opts: { userId: string; plan: PaidPlan; email: string; backUrl: string }) {
+export async function createSubscription(opts: { userId: string; email: string; backUrl: string }) {
   return mp<Preapproval>("/preapproval", {
     method: "POST",
     body: JSON.stringify({
-      reason: reason(opts.plan),
+      reason: `${PLAN.name} · suscripción mensual`,
       external_reference: opts.userId,
       payer_email: opts.email,
       back_url: opts.backUrl,
@@ -60,18 +58,10 @@ export async function createSubscription(opts: { userId: string; plan: PaidPlan;
       auto_recurring: {
         frequency: 1,
         frequency_type: "months",
-        transaction_amount: PLANS[opts.plan].price,
+        transaction_amount: PLAN.price,
         currency_id: "ARS",
       },
     }),
-  });
-}
-
-/** Cambia el monto (y el nombre) de una suscripción activa: el próximo débito ya va con el plan nuevo. */
-export async function changeSubscriptionPlan(id: string, plan: PaidPlan) {
-  return mp<Preapproval>(`/preapproval/${encodeURIComponent(id)}`, {
-    method: "PUT",
-    body: JSON.stringify({ reason: reason(plan), auto_recurring: { transaction_amount: PLANS[plan].price, currency_id: "ARS" } }),
   });
 }
 
@@ -99,14 +89,13 @@ export async function syncSubscription(id: string) {
   // Un aviso viejo de otra suscripción (por ejemplo, una que quedó sin pagar) no pisa la actual.
   if (business.mpPreapprovalId && business.mpPreapprovalId !== p.id && status !== "AUTHORIZED") return;
 
-  const plan = planFromAmount(p.auto_recurring?.transaction_amount);
   const nextPayment = p.next_payment_date ? new Date(p.next_payment_date) : null;
   await rawDb.business.update({
     where: { id: userId },
     data: {
       mpPreapprovalId: p.id,
       subscriptionStatus: status,
-      ...(plan && { plan }),
+      plan: "COMPLETE",
       // Lo pagado dura hasta el próximo débito: si cancela, conserva el acceso hasta esa fecha.
       ...(status === "AUTHORIZED" && nextPayment && { currentPeriodEnd: nextPayment }),
       subscriptionSyncedAt: new Date(),

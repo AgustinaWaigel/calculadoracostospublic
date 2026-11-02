@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { authClient } from "@/lib/auth/server";
 import { LOGIN_PATH, authConfigured } from "@/lib/auth/config";
+import { isIndustry } from "@/lib/industries";
 
 export type AuthState = { error?: string; notice?: string; email?: string } | undefined;
 
@@ -69,12 +70,14 @@ export async function signup(_: AuthState, form: FormData): Promise<AuthState> {
   const password = passwordField.safeParse(String(form.get("clave") ?? ""));
   if (!password.success) return { email: rawEmail, error: password.error.issues[0].message };
   if (form.get("clave") !== form.get("clave2")) return { email: rawEmail, error: "Las contraseñas no coinciden." };
+  const rubro = form.get("rubro");
+  if (!isIndustry(rubro)) return { email: rawEmail, error: "Elegí tu rubro." };
 
   const supabase = await authClient();
   const { data, error } = await supabase.auth.signUp({
     email: email.data,
     password: password.data,
-    options: { emailRedirectTo: `${await appUrl()}/auth/confirmar`, ...captchaToken(form) },
+    options: { emailRedirectTo: `${await appUrl()}/auth/confirmar`, data: { rubro }, ...captchaToken(form) },
   });
   if (error) {
     if (isCaptchaError(error)) return { email: rawEmail, error: CAPTCHA_FAILED };

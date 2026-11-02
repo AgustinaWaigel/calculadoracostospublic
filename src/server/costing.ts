@@ -2,6 +2,8 @@ import "server-only";
 import type { Prisma } from "@prisma/client";
 import { userDb } from "@/lib/db";
 import { setUpAccount } from "./onboarding";
+import { sessionUser } from "@/lib/auth/server";
+import { isIndustry } from "@/lib/industries";
 import {
   computeProductCost,
   fixedCostPerMinute,
@@ -24,7 +26,9 @@ export type ProductWithRecipe = Prisma.ProductGetPayload<{ include: typeof produ
 export async function getBusiness() {
   const db = await userDb();
   const existing = await db.business.findUnique({ where: { id: db.$userId } });
-  return existing ?? setUpAccount(db);
+  if (existing) return existing;
+  const rubro = (await sessionUser())?.rubro;
+  return setUpAccount(db, isIndustry(rubro) ? rubro : "OTRO");
 }
 
 export async function getCostingContext() {

@@ -38,7 +38,7 @@ describe.skipIf(!url)("cada cuenta ve solo lo suyo", () => {
     b = mod.scopedDb(B);
     await wipe();
     // Dos pedidos a la vez: el emprendimiento y los canales se crean una sola vez.
-    await Promise.all([setUpAccount(a), setUpAccount(a), setUpAccount(b)]);
+    await Promise.all([setUpAccount(a, "GASTRONOMIA"), setUpAccount(a, "GASTRONOMIA"), setUpAccount(b)]);
   });
 
   afterAll(async () => {
@@ -57,6 +57,8 @@ describe.skipIf(!url)("cada cuenta ve solo lo suyo", () => {
   });
 
   it("arma la cuenta nueva una sola vez", async () => {
+    expect((await a.business.findUniqueOrThrow({ where: { id: A } })).industry).toBe("GASTRONOMIA");
+    expect((await b.business.findUniqueOrThrow({ where: { id: B } })).industry).toBe("OTRO");
     expect(await a.salesChannel.count()).toBe(2);
     expect(await b.salesChannel.count()).toBe(2);
   });
@@ -157,15 +159,11 @@ describe.skipIf(!url)("cada cuenta ve solo lo suyo", () => {
     await expect(a.sale.delete({ where: { id: propia.id } })).rejects.toThrow();
   });
 
-  it("respeta el plan: sin plan no escribe, el Simple no toca presupuestos", async () => {
+  it("sin plan (prueba vencida) puede mirar pero no escribir", async () => {
     const vencida = mod.scopedDb(B, "NONE");
-    const simple = mod.scopedDb(B, "SIMPLE");
-    expect(await vencida.supply.count()).toBeGreaterThan(0); // mirar, sí
+    expect(await vencida.supply.count()).toBeGreaterThan(0);
     await expect(vencida.supply.create({ data: supplyData(B, "No") })).rejects.toThrow(mod.PlanError);
-    await expect(simple.supply.create({ data: supplyData(B, "Sí") })).resolves.toBeTruthy();
-    await expect(
-      simple.quote.create({ data: { userId: B, number: 900, clientName: "C", validUntil: new Date() } }),
-    ).rejects.toThrow(mod.PlanError);
+    await expect(vencida.quote.deleteMany()).rejects.toThrow(mod.PlanError);
   });
 
   it("cada cuenta tiene su propio emprendimiento", async () => {

@@ -23,12 +23,18 @@ export async function authClient() {
 }
 
 /** Cuenta que inició sesión (id y mail), o null. Una sola consulta por pedido. */
-export const sessionUser = cache(async (): Promise<{ id: string; email: string | null } | null> => {
+export const sessionUser = cache(async (): Promise<{ id: string; email: string | null; rubro: string | null } | null> => {
   if (!authConfigured) return null;
   const { data } = await (await authClient()).auth.getClaims();
   const claims = data?.claims;
   if (!claims?.sub) return null;
-  return { id: String(claims.sub), email: claims.email ? String(claims.email) : null };
+  // El rubro que eligió al registrarse viaja en los datos de la cuenta hasta que se arma su emprendimiento.
+  const meta = claims.user_metadata as { rubro?: unknown } | undefined;
+  return {
+    id: String(claims.sub),
+    email: claims.email ? String(claims.email) : null,
+    rubro: typeof meta?.rubro === "string" ? meta.rubro : null,
+  };
 });
 
 /** Id de la cuenta; sin sesión, manda a ingresar. */

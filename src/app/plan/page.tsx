@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/shared/ui-bits";
 import { CancelSubscription, PlanPicker } from "@/components/billing/plan-picker";
 import { getAccess, rawDb } from "@/lib/db";
 import { requireUserId, sessionUser } from "@/lib/auth/server";
-import { PLANS, TRIAL_DAYS } from "@/lib/billing";
+import { TRIAL_DAYS } from "@/lib/billing";
 import { mpConfigured, syncSubscription } from "@/server/mercadopago";
 
 export const metadata = { title: "Mi plan" };
@@ -32,15 +32,14 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
     sessionUser(),
     rawDb.business.findUnique({ where: { id: userId }, select: { currentPeriodEnd: true, trialEndsAt: true, subscriptionStatus: true } }),
   ]);
-  const planName = access.plan ? PLANS[access.plan].name : null;
 
   const status = {
-    founder: { icon: CrownIcon, title: "Cuenta fundadora", text: "Tenés el plan Completo gratis para siempre. ¡Gracias por estar desde el principio!" },
+    founder: { icon: CrownIcon, title: "Cuenta fundadora", text: "Tenés todo gratis para siempre. ¡Gracias por estar desde el principio!" },
     active: access.ending
-      ? { icon: HourglassIcon, title: `Plan ${planName} (cancelado)`, text: `Seguís con acceso hasta el ${business?.currentPeriodEnd ? dateFmt.format(business.currentPeriodEnd) : "fin del período"}. Podés volver a suscribirte cuando quieras.` }
-      : { icon: SparklesIcon, title: `Plan ${planName}`, text: `Tu suscripción está activa.${business?.currentPeriodEnd ? ` Próximo débito: ${dateFmt.format(business.currentPeriodEnd)}.` : ""}` },
-    trial: { icon: HourglassIcon, title: `Prueba gratis: te quedan ${access.daysLeft} ${access.daysLeft === 1 ? "día" : "días"}`, text: `Durante ${TRIAL_DAYS} días tenés todo el plan Completo. Elegí un plan para seguir cargando datos cuando termine.` },
-    expired: { icon: LockIcon, title: "Tu prueba terminó", text: "Podés ver todos tus datos, pero para cargar o editar necesitás elegir un plan." },
+      ? { icon: HourglassIcon, title: "Suscripción cancelada", text: `Seguís con acceso hasta el ${business?.currentPeriodEnd ? dateFmt.format(business.currentPeriodEnd) : "fin del período"}. Podés volver a suscribirte cuando quieras.` }
+      : { icon: SparklesIcon, title: "Suscripción activa", text: `Tu suscripción está activa.${business?.currentPeriodEnd ? ` Próximo débito: ${dateFmt.format(business.currentPeriodEnd)}.` : ""}` },
+    trial: { icon: HourglassIcon, title: `Prueba gratis: te quedan ${access.daysLeft} ${access.daysLeft === 1 ? "día" : "días"}`, text: `Durante ${TRIAL_DAYS} días tenés todo gratis. Suscribite para seguir cargando datos cuando termine.` },
+    expired: { icon: LockIcon, title: "Tu prueba terminó", text: "Podés ver todos tus datos, pero para cargar o editar necesitás suscribirte." },
   }[access.kind];
   const pending = business?.subscriptionStatus === "PENDING" && access.kind !== "active";
 
@@ -67,11 +66,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
 
         {access.kind !== "founder" &&
           (mpConfigured() ? (
-            <PlanPicker
-              current={access.plan}
-              active={access.kind === "active" && !access.ending}
-              defaultEmail={user?.email ?? ""}
-            />
+            (access.kind !== "active" || access.ending) && <PlanPicker defaultEmail={user?.email ?? ""} />
           ) : (
             <p className="text-sm text-muted-foreground">Los pagos todavía no están habilitados.</p>
           ))}
