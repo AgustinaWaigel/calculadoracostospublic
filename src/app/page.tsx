@@ -1,192 +1,233 @@
 import Link from "next/link";
 import {
-  AlertTriangleIcon,
+  ArrowRightIcon,
   CalculatorIcon,
+  CheckCircle2Icon,
+  CircleIcon,
   FileTextIcon,
+  HelpCircleIcon,
   PackageIcon,
-  PercentIcon,
   PrinterIcon,
   ShapesIcon,
-  TrendingUpIcon,
+  ShoppingBagIcon,
   type LucideIcon,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { EmptyState, PageHeader, StatCard } from "@/components/shared/ui-bits";
+import { Button } from "@/components/ui/button";
 import { Money } from "@/components/shared/money";
-import { DolarCard } from "@/components/dashboard/dolar-card";
-import { ProfitChart } from "@/components/dashboard/profit-chart";
 import { ACCENTS, type Accent } from "@/components/layout/nav-items";
-import { getAllProductsWithPricing } from "@/server/costing";
-import { userDb } from "@/lib/db";
-import { average } from "@/lib/calc/stats";
-import { daysSince, isPriceStale, priceIncrease, supplyUnitCost } from "@/lib/calc/supply";
-import { formatPercent } from "@/lib/money";
+import { getAllProductsWithPricing, getBusiness } from "@/server/costing";
+import { getSales } from "@/server/sales";
+import { currentAccess, userDb } from "@/lib/db";
+import { daysSince, isPriceStale } from "@/lib/calc/supply";
+import { sum } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
-const WINDOW_DAYS = 90;
+export const metadata = { title: "Inicio" };
 
-const QUICK_ACTIONS: { href: string; label: string; icon: LucideIcon; accent: Accent }[] = [
-  { href: "/insumos/nuevo", label: "Cargar insumo", icon: PackageIcon, accent: "menta" },
-  { href: "/productos/nuevo", label: "Nuevo producto", icon: ShapesIcon, accent: "lavanda" },
-  { href: "/presupuestos/nuevo", label: "Presupuesto", icon: FileTextIcon, accent: "amanecer" },
-  { href: "/impresion", label: "Tinta por hoja", icon: PrinterIcon, accent: "menta" },
-  { href: "/calculadora", label: "Cuenta rápida", icon: CalculatorIcon, accent: "halo" },
+interface Action {
+  href: string;
+  title: string;
+  text: string;
+  icon: LucideIcon;
+  accent: Accent;
+  complete?: boolean;
+}
+
+/** Lo que la gente viene a hacer, dicho como lo diría ella. */
+const ACTIONS: Action[] = [
+  { href: "/productos/nuevo", title: "Calcular el precio de un producto", text: "Cargás qué lleva y te dice cuánto cobrar.", icon: ShapesIcon, accent: "lavanda" },
+  { href: "/presupuestos/nuevo", title: "Pasarle un presupuesto a un cliente", text: "En PDF o por WhatsApp, con tus precios.", icon: FileTextIcon, accent: "amanecer", complete: true },
+  { href: "/ventas/nueva", title: "Anotar una venta", text: "Para saber cuánto vendiste y ganaste en el mes.", icon: ShoppingBagIcon, accent: "menta", complete: true },
+  { href: "/insumos", title: "Actualizar el precio de un insumo", text: "Si subió el papel, tus productos se recalculan solos.", icon: PackageIcon, accent: "menta" },
+  { href: "/impresion", title: "Saber cuánto me sale imprimir", text: "La tinta por hoja según tus botellas.", icon: PrinterIcon, accent: "menta" },
+  { href: "/calculadora", title: "Hacer una cuenta rápida", text: "Un precio al toque, sin guardar nada.", icon: CalculatorIcon, accent: "halo" },
 ];
 
-export default async function DashboardPage() {
+export default async function InicioPage() {
   const db = await userDb();
-  const since = new Date(Date.now() - WINDOW_DAYS * 86_400_000);
+  const access = await currentAccess();
+  const fullPlan = access.tier !== "SIMPLE";
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-  const [{ items }, supplies, quotesThisMonth] = await Promise.all([
+
+  const [business, { items }, supplies, profiles, fixedCosts, quotes, monthSales] = await Promise.all([
+    getBusiness(),
     getAllProductsWithPricing(),
-    db.supply.findMany({ include: { priceHistory: { orderBy: { recordedAt: "asc" } } } }),
-    db.quote.count({ where: { createdAt: { gte: monthStart } } }),
+    db.supply.findMany({ select: { id: true, name: true, priceUpdatedAt: true }, orderBy: { priceUpdatedAt: "asc" } }),
+    db.laborProfile.count(),
+    db.fixedCost.count(),
+    fullPlan ? db.quote.count() : Promise.resolve(0),
+    fullPlan ? getSales({ date: { gte: monthStart } }) : Promise.resolve([]),
   ]);
 
-  const priced = items.filter((i) => i.pricing?.reference);
-  const avgMargin = priced.length ? average(priced.map((i) => i.pricing!.reference!.netMarginPercent)) : null;
-  const topProducts = [...priced]
-    .sort((a, b) => b.pricing!.reference!.netProfit.comparedTo(a.pricing!.reference!.netProfit))
-    .slice(0, 5)
-    .map((i) => ({
-      id: i.product.id,
-      name: i.product.name,
-      profit: i.pricing!.reference!.netProfit.toNumber(),
-      margin: i.pricing!.reference!.netMarginPercent.toNumber(),
-    }));
+  const steps = [
+    { done: supplies.length > 0, href: "/insumos/nuevo", title: "Cargá tus insumos", text: "Lo que comprás para producir: papel, tinta, pouch, anillos… con lo que pagaste y cuánto trae." },
+    { done: profiles > 0, href: "/mano-de-obra", title: "Poné cuánto vale tu hora", text: "Tu tiempo también es un costo. La app te ayuda a calcularlo." },
+    { done: fixedCosts > 0, href: "/costos-fijos", title: "Sumá tus gastos fijos", text: "Alquiler, luz, internet, monotributo: se reparten entre lo que producís." },
+    { done: items.length > 0, href: "/productos/nuevo", title: "Armá tu primer producto", text: "Elegís los insumos y los minutos de trabajo, y te sugiere el precio." },
+    ...(fullPlan ? [{ done: quotes > 0, href: "/presupuestos/nuevo", title: "Mandá tu primer presupuesto", text: "Con tus precios, en PDF o directo por WhatsApp." }] : []),
+  ];
+  const doneCount = steps.filter((s) => s.done).length;
 
-  // Insumos que más subieron: desde el último precio anterior a la ventana hasta hoy.
-  const increases = supplies
-    .map((s) => {
-      const before = s.priceHistory.filter((h) => h.recordedAt < since).at(-1);
-      const window = s.priceHistory.filter((h) => h.recordedAt >= since);
-      const inc = priceIncrease(before ? [before, ...window] : window);
-      return inc ? { id: s.id, name: s.name, ...inc, unitCost: supplyUnitCost(s) } : null;
-    })
-    .filter((x): x is NonNullable<typeof x> => x !== null && x.arsPercent.gt(0))
-    .sort((a, b) => b.arsPercent.comparedTo(a.arsPercent))
-    .slice(0, 5);
-
-  const stale = supplies
-    .filter((s) => isPriceStale(s.priceUpdatedAt))
-    .sort((a, b) => a.priceUpdatedAt.getTime() - b.priceUpdatedAt.getTime());
+  const stale = supplies.filter((s) => isPriceStale(s.priceUpdatedAt));
+  const best = items
+    .filter((i) => i.pricing?.reference)
+    .sort((a, b) => b.pricing!.takeHome.comparedTo(a.pricing!.takeHome))
+    .slice(0, 3);
+  const sold = sum(monthSales.map((s) => s.total));
+  const earned = sum(monthSales.map((s) => s.profit));
+  const monthName = new Intl.DateTimeFormat("es-AR", { month: "long" }).format(new Date());
 
   return (
-    <>
-      <PageHeader title="Inicio" />
+    <div className="grid gap-6">
+      <header>
+        <h1 className="font-display text-3xl leading-none tracking-wide uppercase sm:text-4xl">Hola, {business.name}</h1>
+        <p className="mt-2 text-muted-foreground">¿Qué querés hacer hoy?</p>
+      </header>
 
-      <div className="grid gap-4">
-        {/* Accesos directos */}
-        <nav className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5" aria-label="Accesos rápidos">
-          {QUICK_ACTIONS.map((a) => (
-            <Link
-              key={a.href}
-              href={a.href}
-              className={cn(
-                "flex items-center gap-3 rounded-xl border bg-card p-3 font-semibold transition-[transform,background-color] duration-150 ease-out hover:-translate-y-0.5 hover:bg-muted/60",
-                ACCENTS[a.accent].border,
-              )}
-            >
-              <span className={cn("grid size-9 shrink-0 place-items-center rounded-lg", ACCENTS[a.accent].solid)}>
-                <a.icon className="size-5" />
+      {/* Lo que vino a hacer */}
+      <nav className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-label="¿Qué querés hacer?">
+        {ACTIONS.filter((a) => fullPlan || !a.complete).map((a) => (
+          <Link
+            key={a.href}
+            href={a.href}
+            className={cn(
+              "group flex items-start gap-3 rounded-xl border bg-card p-4 transition-[transform,background-color] duration-150 ease-out hover:-translate-y-0.5 hover:bg-muted/50",
+              ACCENTS[a.accent].border,
+            )}
+          >
+            <span className={cn("grid size-10 shrink-0 place-items-center rounded-lg", ACCENTS[a.accent].solid)}>
+              <a.icon className="size-5" />
+            </span>
+            <span className="min-w-0">
+              <span className="block font-semibold leading-snug">{a.title}</span>
+              <span className="mt-0.5 block text-sm text-muted-foreground">{a.text}</span>
+            </span>
+          </Link>
+        ))}
+      </nav>
+
+      {/* Primeros pasos, hasta que estén todos */}
+      {doneCount < steps.length && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex flex-wrap items-baseline justify-between gap-2">
+              <span>Primeros pasos</span>
+              <span className="text-sm font-normal text-muted-foreground">
+                {doneCount} de {steps.length} listos
               </span>
-              {a.label}
-            </Link>
-          ))}
-        </nav>
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Hacelos en este orden y vas a tener el precio real de lo que vendés.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <ol className="grid gap-1">
+              {steps.map((s, i) => (
+                <li key={s.href}>
+                  <Link href={s.href} className="flex items-start gap-3 rounded-lg p-2 hover:bg-muted/50">
+                    {s.done ? (
+                      <CheckCircle2Icon className="mt-0.5 size-5 shrink-0 text-primary" aria-label="Listo" />
+                    ) : (
+                      <CircleIcon className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-label="Pendiente" />
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className={cn("block font-medium", s.done && "text-muted-foreground line-through")}>
+                        {i + 1}. {s.title}
+                      </span>
+                      {!s.done && <span className="block text-sm text-muted-foreground">{s.text}</span>}
+                    </span>
+                    {!s.done && <ArrowRightIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />}
+                  </Link>
+                </li>
+              ))}
+            </ol>
+          </CardContent>
+        </Card>
+      )}
 
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label="Productos" icon={ShapesIcon} accent="lavanda" value={items.length} />
-          <StatCard
-            label="Margen promedio"
-            icon={PercentIcon}
-            accent="tinta"
-            value={avgMargin ? formatPercent(avgMargin, 0) : "—"}
-          />
-          <StatCard
-            label="Precios viejos"
-            icon={AlertTriangleIcon}
-            accent="kraft"
-            value={stale.length}
-            hint="+30 días sin actualizar"
-          />
-          <StatCard label="Presupuestos del mes" icon={FileTextIcon} accent="amanecer" value={quotesThisMonth} />
-        </div>
-
-        {stale.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-halo/70 bg-halo/20 p-3 text-sm dark:border-halo/30 dark:bg-halo/10">
-            <AlertTriangleIcon className="size-4 text-tinta dark:text-halo" />
-            <span className="font-medium">Revisá estos precios:</span>
-            {stale.slice(0, 8).map((s) => (
-              <Badge key={s.id} asChild variant="outline" className="h-7 bg-card px-2.5 hover:bg-muted">
-                <Link href={`/insumos/${s.id}`}>
-                  {s.name} · {daysSince(s.priceUpdatedAt)} d
-                </Link>
-              </Badge>
-            ))}
-          </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* El mes, en una frase */}
+        {fullPlan && monthSales.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Tu {monthName}</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3">
+              <p className="text-lg leading-relaxed">
+                Hiciste <strong>{monthSales.length} {monthSales.length === 1 ? "venta" : "ventas"}</strong> por{" "}
+                <strong><Money value={sold.toString()} /></strong> y te quedaron{" "}
+                <strong className="text-primary"><Money value={earned.toString()} /></strong> de ganancia.
+              </p>
+              <Button asChild variant="outline" className="justify-self-start">
+                <Link href="/ventas">Ver tus ventas</Link>
+              </Button>
+            </CardContent>
+          </Card>
         )}
 
-        <div className="grid gap-4 lg:grid-cols-[1fr_1fr_300px]">
+        {/* Lo que más le deja, dicho en criollo */}
+        {best.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <span className={cn("grid size-7 place-items-center rounded-lg", ACCENTS.lavanda.solid)}>
-                  <ShapesIcon className="size-4" />
-                </span>
-                Lo que más te deja
-              </CardTitle>
+              <CardTitle>Lo que más te deja</CardTitle>
+              <p className="text-sm text-muted-foreground">Vendiéndolo al precio sugerido, en venta directa.</p>
             </CardHeader>
             <CardContent>
-              {topProducts.length === 0 ? (
-                <EmptyState
-                  icon={ShapesIcon}
-                  title="Sin productos"
-                  action={{ label: "Crear producto", href: "/productos/nuevo" }}
-                />
-              ) : (
-                <ProfitChart data={topProducts} />
-              )}
+              <ul className="grid gap-2">
+                {best.map((i) => (
+                  <li key={i.product.id}>
+                    <Link href={`/productos/${i.product.id}/precio`} className="block rounded-lg p-2 hover:bg-muted/50">
+                      <span className="block font-medium">{i.product.name}</span>
+                      <span className="block text-sm text-muted-foreground">
+                        Lo vendés a <Money value={i.pricing!.reference!.price.toString()} /> y te quedan{" "}
+                        <Money value={i.pricing!.takeHome.toString()} className="font-semibold text-primary" /> por unidad
+                        {i.pricing!.ownLabor.gt(0) && " (tu trabajo + ganancia)"}.
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </CardContent>
           </Card>
+        )}
 
-          <Card>
+        {/* Precios viejos, con el porqué */}
+        {stale.length > 0 && (
+          <Card className="border-halo/70">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <span className={cn("grid size-7 place-items-center rounded-lg", ACCENTS.amanecer.solid)}>
-                  <TrendingUpIcon className="size-4" />
-                </span>
-                Lo que más subió
-              </CardTitle>
+              <CardTitle>Revisá estos precios</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Hace más de un mes que no los actualizás. Si subieron, tus productos te están saliendo más caros de lo que la app cree.
+              </p>
             </CardHeader>
             <CardContent>
-              {increases.length === 0 ? (
-                <p className="py-6 text-center text-sm text-muted-foreground">Sin subas en los últimos 90 días.</p>
-              ) : (
-                <ul className="grid gap-1">
-                  {increases.map((s) => (
-                    <li key={s.id}>
-                      <Link href={`/insumos/${s.id}`} className="flex items-center gap-3 rounded-md p-1.5 hover:bg-muted/50">
-                        <span className="min-w-0 flex-1 truncate">{s.name}</span>
-                        <Money value={s.unitCost.toString()} className="text-sm text-muted-foreground" />
-                        {s.usdPercent && s.usdPercent.gt(10) && (
-                          <Badge variant="destructive" title="Subió más que el dólar">
-                            USD +{formatPercent(s.usdPercent, 0)}
-                          </Badge>
-                        )}
-                        <Badge className="bg-amanecer text-nube dark:bg-lavanda dark:text-amanecer-fuerte">+{formatPercent(s.arsPercent, 0)}</Badge>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <ul className="grid gap-1">
+                {stale.slice(0, 5).map((s) => (
+                  <li key={s.id}>
+                    <Link href={`/insumos/${s.id}`} className="flex items-center justify-between gap-3 rounded-lg p-2 hover:bg-muted/50">
+                      <span className="min-w-0 truncate">{s.name}</span>
+                      <span className="shrink-0 text-sm text-muted-foreground">hace {daysSince(s.priceUpdatedAt)} días</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              {stale.length > 5 && <p className="mt-2 text-sm text-muted-foreground">y {stale.length - 5} más en Insumos.</p>}
             </CardContent>
           </Card>
-
-          <DolarCard />
-        </div>
+        )}
       </div>
-    </>
+
+      {/* Ayuda */}
+      <Link href="/ayuda" className="flex items-center gap-3 rounded-xl border border-dashed p-4 hover:bg-muted/50">
+        <HelpCircleIcon className="size-6 shrink-0 text-primary" />
+        <span className="min-w-0 flex-1">
+          <span className="block font-semibold">¿Primera vez? Mirá cómo se usa</span>
+          <span className="block text-sm text-muted-foreground">El paso a paso y las dudas más comunes, explicado simple.</span>
+        </span>
+        <ArrowRightIcon className="size-4 shrink-0 text-muted-foreground" />
+      </Link>
+    </div>
   );
 }
+

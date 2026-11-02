@@ -2,6 +2,7 @@ import {
   CalculatorIcon,
   ClockIcon,
   FileTextIcon,
+  HelpCircleIcon,
   HomeIcon,
   PackageIcon,
   PiggyBankIcon,
@@ -92,6 +93,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/inversiones", label: "Inversiones", icon: PiggyBankIcon, accent: "kraft", complete: true },
   { href: "/impresion", label: "Impresión", icon: PrinterIcon, accent: "menta" },
   { href: "/calculadora", label: "Calculadora rápida", icon: CalculatorIcon, accent: "halo" },
+  { href: "/ayuda", label: "Cómo se usa", icon: HelpCircleIcon, accent: "halo" },
   { href: "/ajustes", label: "Ajustes", icon: SettingsIcon, accent: "neutro" },
 ];
 
