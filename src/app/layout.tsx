@@ -19,6 +19,8 @@ const karla = Karla({ variable: "--font-karla", subsets: ["latin"] });
 const londrina = Londrina_Solid({ variable: "--font-londrina", subsets: ["latin"], weight: "400" });
 
 export const metadata: Metadata = {
+  // Para que los links de las imágenes al compartir sean completos.
+  metadataBase: process.env.NEXT_PUBLIC_APP_URL ? new URL(process.env.NEXT_PUBLIC_APP_URL) : undefined,
   title: { default: `${APP_NAME} · ${OWNER}`, template: `%s · ${APP_NAME}` },
   description: `Calculá costos de producción, precios de venta y presupuestos para tu emprendimiento. Una herramienta de ${OWNER}.`,
   applicationName: APP_NAME,

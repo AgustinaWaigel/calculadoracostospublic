@@ -25,4 +25,7 @@ export const authConfigured = Boolean(AUTH_URL && AUTH_KEY);
 
 /** Pantallas que se ven sin sesión. */
 export const PUBLIC_PATHS = ["/ingresar", "/registro", "/recuperar"];
+
+/** Página de presentación: la ve cualquiera (con o sin sesión). En "/" se muestra a quien no inició sesión. */
+export const LANDING_PATH = "/presentacion";
 export const LOGIN_PATH = "/ingresar";

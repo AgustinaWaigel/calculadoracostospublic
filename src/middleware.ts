@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { AUTH_KEY, AUTH_URL, LOGIN_PATH, PUBLIC_PATHS, authConfigured } from "@/lib/auth/config";
+import { AUTH_KEY, AUTH_URL, LANDING_PATH, LOGIN_PATH, PUBLIC_PATHS, authConfigured } from "@/lib/auth/config";
 
 /**
  * La puerta de toda la app: hace falta haber iniciado sesión (cualquier cuenta registrada; cada
@@ -13,6 +13,7 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith("/auth/")) return NextResponse.next();
   // Los avisos de Mercado Pago llegan sin sesión (se validan con la firma y consultando a MP).
   if (pathname === "/api/mercadopago/webhook") return NextResponse.next();
+  if (pathname === LANDING_PATH || pathname.startsWith(`${LANDING_PATH}/`)) return NextResponse.next();
 
   if (!authConfigured) return isPublic ? NextResponse.next() : deny(request, "config");
 
@@ -29,7 +30,11 @@ export async function middleware(request: NextRequest) {
   });
 
   const { data } = await supabase.auth.getClaims();
-  if (!data?.claims) return isPublic ? response : deny(request);
+  if (!data?.claims) {
+    // Quien entra al link sin sesión ve la presentación, no el formulario de ingreso.
+    if (pathname === "/") return NextResponse.rewrite(new URL(LANDING_PATH, request.url));
+    return isPublic ? response : deny(request);
+  }
 
   // Con sesión no tiene sentido ver el ingreso ni el registro.
   if (isPublic) return NextResponse.redirect(new URL("/", request.url));
