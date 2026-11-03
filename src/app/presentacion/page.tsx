@@ -36,6 +36,46 @@ const STEPS = [
   { title: "Sabé cuánto cobrar", text: "Te sugiere el precio para cada canal de venta y te muestra cuánto te queda de verdad." },
 ];
 
+/** Las capturas, en el orden en que se usa la app. */
+const SHOTS = [
+  {
+    src: "/presentacion/insumo.webp",
+    title: "Cargás tus insumos",
+    text: "Lo que pagaste y cuánto trae: te dice cuánto sale cada uno.",
+    alt: "Carga de un insumo: pouch A4 a $28.949 el paquete de 100, cada pouch sale $289,49",
+  },
+  {
+    src: "/presentacion/receta.webp",
+    title: "Armás la receta",
+    text: "Qué lleva cada producto y cuánto de cada insumo.",
+    alt: "Receta de una agenda con sus insumos, cantidades y costo de cada uno",
+  },
+  {
+    src: "/presentacion/ganancia.webp",
+    title: "Sabés cuánto te queda",
+    text: "El costo real por unidad y tu ganancia, sin cuentas a mano.",
+    alt: "Costo por unidad de la agenda y cuánto te queda al venderla",
+  },
+  {
+    src: "/presentacion/canales.webp",
+    title: "Precio para cada canal",
+    text: "Venta directa, tienda online o mayorista, con las comisiones.",
+    alt: "Precio sugerido por canal de venta y precios por cantidad",
+  },
+  {
+    src: "/presentacion/pdf.webp",
+    title: "Presupuesto en PDF",
+    text: "Con tu logo, listo para mandar por WhatsApp.",
+    alt: "Presupuesto en PDF con los datos del emprendimiento, el cliente, los productos y el total",
+  },
+  {
+    src: "/presentacion/ventas.webp",
+    title: "Tus ventas del mes",
+    text: "Cuánto vendiste y cuánto ganaste, mes a mes.",
+    alt: "Ventas del mes: vendido, ganancia, cantidad de ventas y gráfico de los últimos meses",
+  },
+];
+
 const FEATURES: { icon: LucideIcon; title: string; text: string }[] = [
   { icon: PackageIcon, title: "Insumos con historial", text: "Ves cómo suben los precios y te avisa cuando hace mucho que no los actualizás." },
   { icon: ShapesIcon, title: "Productos con receta", text: "Si sube un insumo, todos los productos que lo usan se recalculan solos." },
@@ -106,7 +146,7 @@ export default function PresentacionPage() {
               <span className="text-sm text-lavanda">Gratis para siempre con insumos y productos.</span>
             </div>
           </div>
-          <Shot src="/presentacion/precio.webp" alt="Precio sugerido de una agenda: costo, margen y cuánto te queda" className="mx-auto w-64 md:w-full md:rotate-2" />
+          <Shot src="/presentacion/ganancia.webp" alt="Costo de una agenda por unidad, dividido en materiales, mano de obra y fijos, y cuánto te queda al venderla" className="mx-auto w-64 md:w-full md:rotate-2" />
         </div>
       </section>
 
@@ -129,19 +169,19 @@ export default function PresentacionPage() {
         <div className="mx-auto max-w-6xl px-4">
           <h2 className="font-display text-3xl tracking-wide uppercase sm:text-4xl">Todo tu emprendimiento en un lugar</h2>
           <p className="mt-2 max-w-2xl text-menta">De lo que comprás a lo que vendés, con números claros.</p>
-          <div className="mt-8 grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-4">
-            {[
-              { src: "/presentacion/insumos.webp", alt: "Lista de insumos con su costo y alertas de precios viejos", label: "Tus insumos" },
-              { src: "/presentacion/precio.webp", alt: "Precio sugerido por canal de venta", label: "Tu precio" },
-              { src: "/presentacion/presupuesto.webp", alt: "Presupuesto con botones para PDF y WhatsApp", label: "Tus presupuestos" },
-              { src: "/presentacion/ventas.webp", alt: "Ventas y ganancia del mes con gráfico", label: "Tus ventas" },
-            ].map((s) => (
-              <figure key={s.src} className="grid gap-2">
+          <ol className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 md:grid-cols-3">
+            {SHOTS.map((s, i) => (
+              <li key={s.src} className="grid content-start gap-3">
                 <Shot src={s.src} alt={s.alt} className="border-[4px] border-nube/90" />
-                <figcaption className="text-center text-sm font-semibold text-halo">{s.label}</figcaption>
-              </figure>
+                <div className="text-center">
+                  <p className="font-semibold text-halo">
+                    {i + 1}. {s.title}
+                  </p>
+                  <p className="mt-0.5 text-sm text-menta">{s.text}</p>
+                </div>
+              </li>
             ))}
-          </div>
+          </ol>
         </div>
       </section>
 
