@@ -198,3 +198,56 @@
     background: linear-gradient(transparent 60%, color-mix(in srgb, var(--brand-halo) 35%, transparent) 60%);
   }
 }
+
+/* ───────── Animaciones de la presentación ───────── */
+@keyframes flotar {
+  0%, 100% { transform: translateY(0) rotate(2deg); }
+  50% { transform: translateY(-14px) rotate(0.5deg); }
+}
+@keyframes subir {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes rebote {
+  0% { opacity: 0; transform: scale(0.3); }
+  60% { opacity: 1; transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+@keyframes brillo {
+  0%, 70% { transform: translateX(-120%) skewX(-20deg); }
+  100% { transform: translateX(220%) skewX(-20deg); }
+}
+@keyframes latido {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand-halo) 60%, transparent); }
+  50% { box-shadow: 0 0 0 12px transparent; }
+}
+
+@layer components {
+  /* El celular de la portada flota. */
+  .anim-flotar { animation: flotar 6s ease-in-out infinite; }
+  /* Palabras del título, una tras otra (el retraso va en --d). */
+  .anim-palabra { display: inline-block; opacity: 0; animation: subir 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; animation-delay: var(--d, 0ms); }
+  .anim-entrada { opacity: 0; animation: subir 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; animation-delay: var(--d, 0ms); }
+  /* Botón principal: brillo que lo cruza y un latido suave. */
+  .anim-brillo { position: relative; overflow: hidden; animation: latido 2.8s ease-out infinite; }
+  .anim-brillo::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    width: 40%;
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.55), transparent);
+    animation: brillo 3.5s ease-in-out infinite;
+    pointer-events: none;
+  }
+  /* Entra al aparecer en pantalla (lo activa <Reveal>). */
+  [data-reveal] { opacity: 0; transform: translateY(32px); transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1); transition-delay: var(--d, 0ms); }
+  [data-reveal="zoom"] { transform: translateY(24px) scale(0.92); }
+  [data-reveal][data-visible] { opacity: 1; transform: none; }
+  [data-visible] .anim-rebote, .anim-rebote[data-visible] { animation: rebote 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: calc(var(--d, 0ms) + 200ms); }
+}
+
+/* Quien pide menos movimiento en su celular, ve todo quieto. */
+@media (prefers-reduced-motion: reduce) {
+  .anim-flotar, .anim-palabra, .anim-entrada, .anim-brillo, .anim-brillo::after, .anim-rebote { animation: none !important; opacity: 1 !important; transform: none !important; }
+  [data-reveal] { opacity: 1 !important; transform: none !important; transition: none !important; }
+}

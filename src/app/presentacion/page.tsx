@@ -20,6 +20,10 @@ import { APP_NAME, OWNER } from "@/lib/brand";
 import { FREE_PLAN, PLAN, TRIAL_DAYS } from "@/lib/billing";
 import { INDUSTRIES, industries } from "@/lib/industries";
 import { formatMoney } from "@/lib/money";
+import { Reveal } from "@/components/landing/reveal";
+import { CountUp } from "@/components/landing/count-up";
+
+const HEADLINE = "¿Sabés cuánto te cuesta lo que vendés?";
 
 const DESCRIPTION =
   "Calculá cuánto te cuesta lo que vendés y cuánto cobrar. Insumos, productos, mano de obra, presupuestos por WhatsApp y ventas. Gratis para empezar.";
@@ -105,7 +109,7 @@ function Shot({ src, alt, className = "" }: { src: string; alt: string; classNam
 
 function SignupButton({ children = "Creá tu cuenta gratis" }: { children?: React.ReactNode }) {
   return (
-    <Button asChild size="lg" className="bg-halo text-tinta hover:bg-halo/90">
+    <Button asChild size="lg" className="anim-brillo bg-halo text-tinta hover:bg-halo/90">
       <Link href="/registro">{children}</Link>
     </Button>
   );
@@ -133,20 +137,35 @@ export default function PresentacionPage() {
       <section className="bg-amanecer text-nube">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 pt-10 pb-14 md:grid-cols-[1fr_300px] md:pt-16">
           <div className="grid gap-5">
-            <p className="text-sm font-semibold tracking-wide text-lavanda uppercase">Para emprendedores que fabrican lo que venden</p>
+            <p className="anim-entrada text-sm font-semibold tracking-wide text-lavanda uppercase">Para emprendedores que fabrican lo que venden</p>
             <h1 className="font-display text-4xl leading-[1.05] tracking-wide text-balance uppercase sm:text-5xl md:text-6xl">
-              ¿Sabés cuánto te cuesta lo que vendés?
+              {HEADLINE.split(" ").map((word, i) => (
+                <span key={i} className="anim-palabra" style={{ "--d": `${150 + i * 90}ms` } as React.CSSProperties}>
+                  {word}&nbsp;
+                </span>
+              ))}
             </h1>
-            <p className="max-w-xl text-lg text-pretty text-cielo">
+            <p className="anim-entrada max-w-xl text-lg text-pretty text-cielo" style={{ "--d": "800ms" } as React.CSSProperties}>
               Cargá tus insumos y tus productos, y la calculadora te dice cuánto te sale cada uno, cuánto cobrar y cuánto te queda de verdad.
               Sin planillas, desde el celular.
             </p>
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="anim-entrada flex flex-wrap items-center gap-3" style={{ "--d": "1000ms" } as React.CSSProperties}>
               <SignupButton />
               <span className="text-sm text-lavanda">Gratis para siempre con insumos y productos.</span>
             </div>
           </div>
-          <Shot src="/presentacion/ganancia.webp" alt="Costo de una agenda por unidad, dividido en materiales, mano de obra y fijos, y cuánto te queda al venderla" className="mx-auto w-64 md:w-full md:rotate-2" />
+          <div className="anim-entrada relative mx-auto w-64 md:w-full" style={{ "--d": "400ms" } as React.CSSProperties}>
+            <div className="anim-flotar">
+              <Shot src="/presentacion/ganancia.webp" alt="Costo de una agenda por unidad, dividido en materiales, mano de obra y fijos, y cuánto te queda al venderla" />
+            </div>
+            {/* Etiqueta que salta sobre el celular con lo que te queda, contando. */}
+            <div className="anim-rebote absolute -bottom-4 -left-6 rounded-2xl bg-halo px-4 py-2 text-tinta shadow-xl md:-left-12" data-visible style={{ "--d": "1100ms" } as React.CSSProperties}>
+              <span className="block text-xs font-semibold uppercase">Te queda por unidad</span>
+              <span className="block font-display text-2xl">
+                <CountUp to={15732} prefix="$ " delay={1300} />
+              </span>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -155,11 +174,13 @@ export default function PresentacionPage() {
         <h2 className="font-display text-3xl tracking-wide uppercase sm:text-4xl">Así de simple</h2>
         <ol className="mt-6 grid gap-4 md:grid-cols-3">
           {STEPS.map((s, i) => (
-            <li key={s.title} className="rounded-2xl border bg-card p-5">
-              <span className="grid size-9 place-items-center rounded-full bg-halo font-display text-lg text-tinta">{i + 1}</span>
+            <Reveal as="li" key={s.title} delay={i * 150} className="rounded-2xl border bg-card p-5 transition-transform hover:-translate-y-1">
+              <span className="anim-rebote grid size-9 place-items-center rounded-full bg-halo font-display text-lg text-tinta" style={{ "--d": `${i * 150}ms` } as React.CSSProperties}>
+                {i + 1}
+              </span>
               <h3 className="mt-3 text-lg font-semibold">{s.title}</h3>
               <p className="mt-1 text-muted-foreground">{s.text}</p>
-            </li>
+            </Reveal>
           ))}
         </ol>
       </section>
@@ -171,15 +192,15 @@ export default function PresentacionPage() {
           <p className="mt-2 max-w-2xl text-menta">De lo que comprás a lo que vendés, con números claros.</p>
           <ol className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 md:grid-cols-3">
             {SHOTS.map((s, i) => (
-              <li key={s.src} className="grid content-start gap-3">
-                <Shot src={s.src} alt={s.alt} className="border-[4px] border-nube/90" />
+              <Reveal as="li" zoom key={s.src} delay={(i % 3) * 150} className="group grid content-start gap-3">
+                <Shot src={s.src} alt={s.alt} className="border-[4px] border-nube/90 transition-transform duration-300 group-hover:-translate-y-2 group-hover:rotate-1" />
                 <div className="text-center">
                   <p className="font-semibold text-halo">
                     {i + 1}. {s.title}
                   </p>
                   <p className="mt-0.5 text-sm text-menta">{s.text}</p>
                 </div>
-              </li>
+              </Reveal>
             ))}
           </ol>
         </div>
@@ -189,12 +210,12 @@ export default function PresentacionPage() {
       <section className="mx-auto max-w-6xl px-4 py-14">
         <h2 className="font-display text-3xl tracking-wide uppercase sm:text-4xl">Qué podés hacer</h2>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {FEATURES.map((f) => (
-            <div key={f.title} className="rounded-2xl border bg-card p-5">
-              <f.icon className="size-6 text-primary" />
+          {FEATURES.map((f, i) => (
+            <Reveal key={f.title} delay={(i % 4) * 100} className="group rounded-2xl border bg-card p-5 transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-lg">
+              <f.icon className="size-6 text-primary transition-transform duration-300 group-hover:scale-125 group-hover:-rotate-6" />
               <h3 className="mt-3 font-semibold">{f.title}</h3>
               <p className="mt-1 text-sm text-muted-foreground">{f.text}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
         <p className="mt-6 text-sm text-muted-foreground">
@@ -204,14 +225,14 @@ export default function PresentacionPage() {
 
       {/* Quién la hizo */}
       <section className="bg-cielo/60 py-14 dark:bg-cielo/10">
-        <div className="mx-auto grid max-w-3xl gap-4 px-4 text-center">
+        <Reveal className="mx-auto grid max-w-3xl gap-4 px-4 text-center">
           <CalculatorIcon className="mx-auto size-8 text-amanecer dark:text-lavanda" />
           <h2 className="font-display text-3xl tracking-wide uppercase">La hice para mi emprendimiento</h2>
           <p className="text-lg text-pretty">
             Soy Agustina, estudiante de sistemas y dueña de {OWNER}. Entre el papel, la tinta, los insumos y las horas de trabajo, nunca sabía
             bien cuánto me costaba cada producto ni cuánto cobrar. Así que armé esta calculadora, y ahora la puede usar cualquiera.
           </p>
-        </div>
+        </Reveal>
       </section>
 
       {/* Precios */}
@@ -219,7 +240,7 @@ export default function PresentacionPage() {
         <h2 className="font-display text-3xl tracking-wide uppercase sm:text-4xl">Precios</h2>
         <p className="mt-2 text-muted-foreground">Arrancás con {TRIAL_DAYS} días con todo, sin tarjeta. Después elegís.</p>
         <div className="mt-6 grid gap-4 md:grid-cols-2">
-          <div className="grid content-start gap-4 rounded-2xl border bg-card p-6">
+          <Reveal zoom className="grid content-start gap-4 rounded-2xl border bg-card p-6">
             <div>
               <h3 className="text-xl font-semibold">{FREE_PLAN.name}</h3>
               <p className="mt-1 font-display text-4xl">$0</p>
@@ -235,8 +256,8 @@ export default function PresentacionPage() {
             <Button asChild variant="outline" className="justify-self-start">
               <Link href="/registro">Empezar gratis</Link>
             </Button>
-          </div>
-          <div className="grid content-start gap-4 rounded-2xl border-2 border-primary bg-card p-6">
+          </Reveal>
+          <Reveal zoom delay={150} className="grid content-start gap-4 rounded-2xl border-2 border-primary bg-card p-6">
             <div>
               <h3 className="text-xl font-semibold">{PLAN.name}</h3>
               <p className="mt-1 font-display text-4xl">
@@ -256,7 +277,7 @@ export default function PresentacionPage() {
               <Link href="/registro">Probarlo {TRIAL_DAYS} días gratis</Link>
             </Button>
             <p className="text-xs text-muted-foreground">Pagás con Mercado Pago y cancelás cuando quieras.</p>
-          </div>
+          </Reveal>
         </div>
       </section>
 
