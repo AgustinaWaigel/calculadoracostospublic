@@ -8,7 +8,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { logout } from "@/actions/auth";
-import { LANDING_PATH, PUBLIC_PATHS } from "@/lib/auth/config";
+import { LANDING_PATH, LEGAL_PATHS, PUBLIC_PATHS } from "@/lib/auth/config";
 import { useAccess, useIndustry } from "@/components/providers";
 import { INDUSTRIES } from "@/lib/industries";
 import { sectionLocked } from "@/lib/billing";
@@ -18,7 +18,7 @@ import { CurrencySwitcher } from "./currency-switcher";
 import { AlasCredit } from "./alas-credit";
 import { APP_NAME, CONTACTS, DEVELOPER, OWNER } from "@/lib/brand";
 
-const AUTH_SCREENS = [...PUBLIC_PATHS, "/nueva-clave", LANDING_PATH];
+const AUTH_SCREENS = [...PUBLIC_PATHS, "/nueva-clave", LANDING_PATH, ...LEGAL_PATHS];
 
 function BrandMark({ logoUrl, className }: { logoUrl: string | null; className?: string }) {
   return logoUrl ? (

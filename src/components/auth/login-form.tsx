@@ -102,6 +102,20 @@ export function SignupForm() {
       </fieldset>
       <EmailField id="signup-email" defaultValue={state?.email} />
       <NewPasswordFields prefix="signup" />
+      <label className="flex items-start gap-2 text-sm">
+        <input type="checkbox" name="acepto" required className="mt-1 accent-primary" />
+        <span>
+          Acepto los{" "}
+          <Link href="/terminos" target="_blank" className="font-semibold underline underline-offset-4">
+            términos y condiciones
+          </Link>{" "}
+          y la{" "}
+          <Link href="/privacidad" target="_blank" className="font-semibold underline underline-offset-4">
+            política de privacidad
+          </Link>
+          .
+        </span>
+      </label>
       <Captcha resetKey={state} />
       <Feedback state={state} />
       <Submit pending={pending} idle="Crear cuenta" busy="Creando…" />

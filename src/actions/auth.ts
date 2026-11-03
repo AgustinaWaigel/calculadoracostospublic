@@ -70,6 +70,7 @@ export async function signup(_: AuthState, form: FormData): Promise<AuthState> {
   const password = passwordField.safeParse(String(form.get("clave") ?? ""));
   if (!password.success) return { email: rawEmail, error: password.error.issues[0].message };
   if (form.get("clave") !== form.get("clave2")) return { email: rawEmail, error: "Las contraseñas no coinciden." };
+  if (form.get("acepto") !== "on") return { email: rawEmail, error: "Para crear la cuenta tenés que aceptar los términos y la política de privacidad." };
   const rubro = form.get("rubro");
   if (!isIndustry(rubro)) return { email: rawEmail, error: "Elegí tu rubro." };
 

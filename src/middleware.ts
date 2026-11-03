@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { AUTH_KEY, AUTH_URL, LANDING_PATH, LOGIN_PATH, PUBLIC_PATHS, authConfigured } from "@/lib/auth/config";
+import { AUTH_KEY, AUTH_URL, LANDING_PATH, LEGAL_PATHS, LOGIN_PATH, PUBLIC_PATHS, authConfigured } from "@/lib/auth/config";
 
 /**
  * La puerta de toda la app: hace falta haber iniciado sesión (cualquier cuenta registrada; cada
@@ -13,7 +13,7 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith("/auth/")) return NextResponse.next();
   // Los avisos de Mercado Pago llegan sin sesión (se validan con la firma y consultando a MP).
   if (pathname === "/api/mercadopago/webhook") return NextResponse.next();
-  if (pathname === LANDING_PATH || pathname.startsWith(`${LANDING_PATH}/`)) return NextResponse.next();
+  if (pathname === LANDING_PATH || pathname.startsWith(`${LANDING_PATH}/`) || LEGAL_PATHS.includes(pathname)) return NextResponse.next();
 
   if (!authConfigured) return isPublic ? NextResponse.next() : deny(request, "config");
 

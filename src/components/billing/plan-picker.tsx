@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { CheckIcon, Loader2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,13 @@ export function PlanPicker({ defaultEmail }: { defaultEmail: string }) {
             {pending && <Loader2Icon className="animate-spin" />}
             Suscribirme con Mercado Pago
           </Button>
+          <p className="text-xs text-muted-foreground">
+            Al suscribirte aceptás los{" "}
+            <Link href="/terminos" target="_blank" className="underline underline-offset-4">
+              términos y condiciones
+            </Link>
+            . Tenés 10 días para arrepentirte y que te devolvamos lo pagado.
+          </p>
           <Feedback state={state} />
         </form>
       </CardContent>

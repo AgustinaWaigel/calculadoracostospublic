@@ -1,6 +1,7 @@
 import { AtSignIcon, GlobeIcon, MailIcon, MessageCircleIcon } from "lucide-react";
 import { CONTACTS, DEVELOPER, OWNER } from "@/lib/brand";
 import { cn } from "@/lib/utils";
+import { LegalLinks } from "@/components/legal/legal-links";
 
 const LINKS = [
   { ...CONTACTS.whatsapp, icon: MessageCircleIcon, name: "WhatsApp" },
@@ -33,6 +34,7 @@ export function AlasCredit({ className, linkClassName }: { className?: string; l
         ))}
       </ul>
       <p className="opacity-80">Desarrollado por {DEVELOPER}</p>
+      <LegalLinks className="mt-1 justify-start opacity-80 [.text-center_&]:justify-center" />
     </div>
   );
 }
