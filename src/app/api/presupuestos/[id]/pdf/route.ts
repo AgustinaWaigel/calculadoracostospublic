@@ -43,6 +43,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     notes: quote.notes,
     discountPercent: quote.discountPercent.toString(),
     paidAmount: quote.paidAmount.toString(),
+    deliveryDate: quote.deliveryDate,
     items: quote.items.map((i) => ({
       description: i.description,
       quantity: i.quantity.toString(),

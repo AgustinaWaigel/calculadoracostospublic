@@ -16,6 +16,7 @@ export interface QuotePdfData {
   discountPercent: string;
   /** Seña o pagos parciales. */
   paidAmount: string;
+  deliveryDate: Date | null;
   items: { description: string; quantity: string; unitPrice: string }[];
   business: {
     name: string;

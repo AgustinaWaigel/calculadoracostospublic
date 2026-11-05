@@ -104,7 +104,7 @@ export function QuoteActions({
       </Button>
       <Button asChild variant="outline">
         <a href={`${ticketUrl}&ver`} target="_blank" rel="noreferrer">
-          <ReceiptTextIcon /> Ticket
+          <ReceiptTextIcon /> Ticket del pedido
         </a>
       </Button>
       <Button variant="outline" onClick={shareTicket} disabled={sharing}>

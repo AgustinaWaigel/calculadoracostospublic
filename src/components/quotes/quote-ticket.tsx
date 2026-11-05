@@ -4,6 +4,8 @@ import { D, formatMoney, formatNumber, formatPercent } from "@/lib/money";
 import { formatQuoteNumber } from "@/lib/quote-text";
 import { DISPLAY, PALETTE, TEXT, dateFmt, type QuotePdfData } from "./quote-pdf";
 
+const deliveryFmt = new Intl.DateTimeFormat("es-AR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+
 // Ticket de 80 mm de ancho (el de las impresoras térmicas). El alto crece con la cantidad de ítems.
 const WIDTH = 80 * 2.835;
 
@@ -35,18 +37,18 @@ function Line({ label, value }: { label: string; value: string }) {
 }
 
 /**
- * Versión ticket del presupuesto: corta, para imprimir o darle al cliente en mano.
- * Con `receipt` es el recibo de lo que ya pagó (no es una factura).
+ * Ticket del pedido: corto, para darle al cliente en mano (para quién, para cuándo, cuánto pagó y
+ * cuánto le falta). Con `receipt` es el recibo de lo que ya pagó (no es una factura).
  */
 export function QuoteTicket({ q, receipt = false }: { q: QuotePdfData; receipt?: boolean }) {
   const t = quoteTotals(q.items, q.discountPercent);
   const paid = D(q.paidAmount);
   const balance = t.total.minus(paid);
-  const kind = receipt ? "Recibo" : "Presupuesto";
+  const kind = receipt ? "Recibo" : "Pedido";
   const contact = [q.business.phone, q.business.instagram, q.business.address].filter(Boolean);
 
   return (
-    <Document title={`${receipt ? "Recibo" : "Ticket"} ${formatQuoteNumber(q.number)} - ${q.clientName}`} author={q.business.name}>
+    <Document title={`${kind} ${formatQuoteNumber(q.number)} - ${q.clientName}`} author={q.business.name}>
       <Page size={{ width: WIDTH }} style={s.page} wrap={false}>
         <Text style={s.businessName}>{q.business.name}</Text>
         {contact.map((c) => (
@@ -61,8 +63,13 @@ export function QuoteTicket({ q, receipt = false }: { q: QuotePdfData; receipt?:
         </Text>
         <Text style={[s.center, s.muted]}>{dateFmt.format(receipt ? new Date() : q.createdAt)}</Text>
         <Text style={[s.center, { marginTop: 3 }]}>
-          Cliente: <Text style={s.bold}>{q.clientName}</Text>
+          Para: <Text style={s.bold}>{q.clientName}</Text>
         </Text>
+        {q.deliveryDate && (
+          <Text style={s.center}>
+            Entrega: <Text style={s.bold}>{deliveryFmt.format(q.deliveryDate)}</Text>
+          </Text>
+        )}
 
         <View style={s.rule} />
         {q.items.map((item, i) => (
@@ -83,16 +90,13 @@ export function QuoteTicket({ q, receipt = false }: { q: QuotePdfData; receipt?:
           <Text style={s.totalLabel}>Total</Text>
           <Text style={s.totalValue}>{formatMoney(t.total)}</Text>
         </View>
-        {paid.gt(0) && (
-          <>
-            <Line label={receipt ? "Recibimos" : "Seña / pagado"} value={formatMoney(paid)} />
-            <View style={s.total}>
-              <Text style={s.bold}>Resta pagar</Text>
-              <Text style={s.bold}>{formatMoney(balance.gt(0) ? balance : 0)}</Text>
-            </View>
-          </>
-        )}
-        {!receipt && <Text style={[s.muted, { marginTop: 3 }]}>Válido hasta el {dateFmt.format(q.validUntil)}</Text>}
+        <View style={{ marginTop: 3 }}>
+          <Line label={receipt ? "Recibimos" : "Seña"} value={paid.gt(0) ? formatMoney(paid) : "Sin seña"} />
+        </View>
+        <View style={s.total}>
+          <Text style={s.bold}>Resta pagar</Text>
+          <Text style={s.bold}>{formatMoney(balance.gt(0) ? balance : 0)}</Text>
+        </View>
 
         {q.notes && (
           <>
