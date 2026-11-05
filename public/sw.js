@@ -1,6 +1,7 @@
 // Service worker mínimo: hace la app instalable y muestra una página de aviso si no hay conexión.
 // Las páginas no se guardan: tienen datos de la cuenta y el dispositivo puede ser compartido.
-const CACHE = "costos-v2";
+// Cambiar la versión borra la caché vieja al activarse (v2 podía tener errores guardados).
+const CACHE = "costos-v3";
 const OFFLINE_URL = "/offline.html";
 
 self.addEventListener("install", (event) => {
@@ -31,8 +32,12 @@ self.addEventListener("fetch", (event) => {
         (hit) =>
           hit ||
           fetch(request).then((res) => {
-            const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(request, copy));
+            // Solo lo que llegó bien: si se guarda un 404 (ej: CSS de una versión anterior), la página
+            // queda sin estilos hasta forzar la recarga.
+            if (res.ok) {
+              const copy = res.clone();
+              caches.open(CACHE).then((c) => c.put(request, copy));
+            }
             return res;
           }),
       ),
