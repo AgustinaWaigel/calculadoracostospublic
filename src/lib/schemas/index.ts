@@ -30,6 +30,7 @@ export const pricingModes = ["MARGIN", "MARKUP"] as const;
 export const taxConditions = ["MONOTRIBUTO", "RESPONSABLE_INSCRIPTO", "EXENTO"] as const;
 export const channelTypes = ["DIRECT", "WHOLESALE", "OTHER"] as const;
 export const quoteStatuses = ["DRAFT", "SENT", "ACCEPTED", "REJECTED", "EXPIRED"] as const;
+export const productionStatuses = ["PENDING", "IN_PROGRESS", "READY", "DELIVERED"] as const;
 export const investmentKinds = ["INVESTMENT", "RECOVERY"] as const;
 
 export const FIXED_COST_LABELS: Record<(typeof fixedCostCategories)[number], string> = {
@@ -59,6 +60,13 @@ export const QUOTE_STATUS_LABELS: Record<(typeof quoteStatuses)[number], string>
   ACCEPTED: "Aceptado",
   REJECTED: "Rechazado",
   EXPIRED: "Vencido",
+};
+
+export const PRODUCTION_LABELS: Record<(typeof productionStatuses)[number], string> = {
+  PENDING: "Para hacer",
+  IN_PROGRESS: "En proceso",
+  READY: "Listo",
+  DELIVERED: "Entregado",
 };
 
 export const PRICE_SOURCE_LABELS: Record<(typeof priceSources)[number], string> = {
@@ -260,6 +268,14 @@ export const quoteSchema = z.object({
   validUntil: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida"),
   status: z.enum(quoteStatuses).default("DRAFT"),
   discountPercent: percentField("El descuento", 99),
+  /** Seña o pagos parciales que ya hizo el cliente. */
+  paidAmount: optionalDecimalField({ min: 0, label: "Lo pagado" }).transform((v) => v ?? "0"),
+  deliveryDate: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((v) => (v ? v : null))
+    .refine((v) => v === null || /^\d{4}-\d{2}-\d{2}$/.test(v), "Fecha inválida"),
   /** Descuentos por cantidad de este presupuesto (copia de Ajustes al crearlo; vacío = sin descuento). */
   volumeTiers: z.array(volumeTierSchema).refine(uniqueTiers, "Hay cantidades repetidas").default([]),
   items: z

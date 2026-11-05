@@ -327,7 +327,7 @@ model VolumeTier {
 // ───────── Presupuestos ─────────
 
 model Quote {
-  id              String      @id @default(cuid())
+  id              String           @id @default(cuid())
   userId          String
   number          Int
   clientName      String
@@ -335,14 +335,19 @@ model Quote {
   clientEmail     String?
   notes           String?
   validUntil      DateTime
-  status          QuoteStatus @default(DRAFT)
+  status          QuoteStatus      @default(DRAFT)
   /// Cuándo pasó a aceptado (su ganancia cuenta como recupero de la inversión desde esa fecha).
   acceptedAt      DateTime?
-  discountPercent Decimal     @default(0)
+  discountPercent Decimal          @default(0)
   /// Descuentos por cantidad propios del presupuesto: [{ minQuantity, discountPercent }]. Se copian de Ajustes al crearlo.
-  volumeTiers     Json        @default("[]")
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  volumeTiers     Json             @default("[]")
+  /// Lo que ya pagó el cliente (seña o pagos parciales).
+  paidAmount      Decimal          @default(0)
+  deliveryDate    DateTime?
+  /// En qué anda el pedido una vez aceptado.
+  production      ProductionStatus @default(PENDING)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
   items           QuoteItem[]
   sale            Sale?
 
@@ -355,6 +360,13 @@ enum QuoteStatus {
   ACCEPTED
   REJECTED
   EXPIRED
+}
+
+enum ProductionStatus {
+  PENDING
+  IN_PROGRESS
+  READY
+  DELIVERED
 }
 
 model QuoteItem {

@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { Document, Font, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import { quoteTotals } from "@/lib/calc/quote";
-import { D, formatMoney, formatNumber, formatPercent } from "@/lib/money";
+import { D, Decimal, formatMoney, formatNumber, formatPercent } from "@/lib/money";
 import { formatQuoteNumber } from "@/lib/quote-text";
 
 export interface QuotePdfData {
@@ -14,6 +14,8 @@ export interface QuotePdfData {
   clientEmail: string | null;
   notes: string | null;
   discountPercent: string;
+  /** Seña o pagos parciales. */
+  paidAmount: string;
   items: { description: string; quantity: string; unitPrice: string }[];
   business: {
     name: string;
@@ -26,7 +28,7 @@ export interface QuotePdfData {
 }
 
 // Paleta neutra en verdes: el presupuesto va a nombre de cada emprendimiento, no de una marca.
-const PALETTE = {
+export const PALETTE = {
   ink: "#0B5E41", // verde oscuro: textos y portada
   inkSoft: "#2F6E55",
   paper: "#FFFFFF",
@@ -53,8 +55,8 @@ if (hasBrandFonts) {
     ],
   });
 }
-const DISPLAY = hasBrandFonts ? "Londrina" : "Helvetica-Bold";
-const TEXT = hasBrandFonts ? "Karla" : "Helvetica";
+export const DISPLAY = hasBrandFonts ? "Londrina" : "Helvetica-Bold";
+export const TEXT = hasBrandFonts ? "Karla" : "Helvetica";
 Font.registerHyphenationCallback((word) => [word]);
 
 const PAD = 40;
@@ -138,7 +140,7 @@ const s = StyleSheet.create({
 
 const RIBBON = [PALETTE.mint, PALETTE.lime, PALETTE.mintLight, PALETTE.inkSoft];
 
-const dateFmt = new Intl.DateTimeFormat("es-AR", { dateStyle: "long", timeZone: "UTC" });
+export const dateFmt = new Intl.DateTimeFormat("es-AR", { dateStyle: "long", timeZone: "UTC" });
 
 export function QuotePdf({ q }: { q: QuotePdfData }) {
   const t = quoteTotals(q.items, q.discountPercent);
@@ -214,6 +216,18 @@ export function QuotePdf({ q }: { q: QuotePdfData }) {
               <Text style={s.grandLabel}>Total</Text>
               <Text style={s.grandValue}>{formatMoney(t.total)}</Text>
             </View>
+            {D(q.paidAmount).gt(0) && (
+              <>
+                <View style={[s.totalRow, { marginTop: 4 }]}>
+                  <Text>Seña / pagado</Text>
+                  <Text>{formatMoney(q.paidAmount)}</Text>
+                </View>
+                <View style={s.totalRow}>
+                  <Text style={{ fontWeight: 700 }}>Resta pagar</Text>
+                  <Text style={{ fontWeight: 700 }}>{formatMoney(Decimal.max(t.total.minus(q.paidAmount), 0))}</Text>
+                </View>
+              </>
+            )}
             <Text style={s.validity}>Válido hasta el {dateFmt.format(q.validUntil)}</Text>
           </View>
 

@@ -10,7 +10,7 @@ export default async function NuevoPresupuestoPage({
   searchParams: Promise<{ producto?: string }>;
 }) {
   const { producto } = await searchParams;
-  const { products, tiers, business } = await getQuoteOptions();
+  const { products, tiers, business, profit } = await getQuoteOptions();
   const validUntil = new Date(Date.now() + business.quoteValidityDays * 86_400_000).toISOString().slice(0, 10);
   const preselected = products.find((p) => p.id === producto);
 
@@ -20,6 +20,7 @@ export default async function NuevoPresupuestoPage({
       <QuoteEditor
         products={products}
         tiers={tiers}
+        profit={profit}
         defaults={{
           clientName: "",
           clientPhone: null,
@@ -28,6 +29,8 @@ export default async function NuevoPresupuestoPage({
           validUntil,
           status: "DRAFT",
           discountPercent: "0",
+          paidAmount: "0",
+          deliveryDate: null,
           volumeTiers: tiers.map((t) => ({ minQuantity: String(t.minQuantity), discountPercent: t.discountPercent })),
           items: [
             preselected

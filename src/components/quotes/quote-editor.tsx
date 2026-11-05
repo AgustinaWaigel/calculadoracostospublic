@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2Icon, PlusIcon, SaveIcon, TagIcon, Trash2Icon } from "lucide-react";
+import { AlertTriangleIcon, Loader2Icon, PlusIcon, SaveIcon, TagIcon, Trash2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,13 +17,16 @@ import { useAction } from "@/components/shared/use-action";
 import { saveQuote } from "@/actions/quotes";
 import { quoteSchema, type QuoteData, type QuoteInput } from "@/lib/schemas";
 import { quoteBreakdown, volumePrice, type VolumePrice } from "@/lib/calc/quote";
+import { saleProfit } from "@/lib/calc/sales";
 import type { VolumeTierInput } from "@/lib/calc/pricing";
-import { D, formatMoney, formatPercent, parseMoneyInput, toInputString } from "@/lib/money";
+import { D, formatMoney, formatPercent, parseMoneyInput, roundCents, sum, toInputString } from "@/lib/money";
 import { cn } from "@/lib/utils";
-import type { QuoteFormValues, QuoteProductOption } from "./types";
+import type { QuoteFormValues, QuoteProductOption, QuoteProfitContext } from "./types";
 
 const CUSTOM = "__custom__";
 const EXTRA_CHIPS = [0, 5, 10, 15];
+/** Por debajo de este margen avisamos que el ítem deja poco. */
+const LOW_MARGIN = 0.1;
 
 /** Tramos del form → tramos para calcular (los que están a medio escribir no cuentan). */
 function parseTiers(rows: { minQuantity?: unknown; discountPercent?: unknown }[] | undefined) {
@@ -39,10 +42,12 @@ function parseTiers(rows: { minQuantity?: unknown; discountPercent?: unknown }[]
 export function QuoteEditor({
   products,
   tiers,
+  profit,
   defaults,
 }: {
   products: QuoteProductOption[];
   tiers: { minQuantity: number; discountPercent: string }[];
+  profit: QuoteProfitContext;
   defaults: QuoteFormValues;
 }) {
   const router = useRouter();
@@ -54,6 +59,8 @@ export function QuoteEditor({
       clientEmail: defaults.clientEmail ?? "",
       notes: defaults.notes ?? "",
       discountPercent: toInputString(defaults.discountPercent),
+      paidAmount: D(defaults.paidAmount).isZero() ? "" : toInputString(defaults.paidAmount),
+      deliveryDate: defaults.deliveryDate ?? "",
       volumeTiers: defaults.volumeTiers.map((t) => ({ ...t, discountPercent: toInputString(t.discountPercent) })),
       items: defaults.items.map((i) => ({
         ...i,
@@ -110,7 +117,8 @@ export function QuoteEditor({
     const unitPrice = parseMoneyInput(String(item?.unitPrice ?? "")) ?? D(0);
     const suggested = suggest(item?.productId, item?.quantity, quoteTiers);
     const isManual = manual.has(id);
-    return { id, quantity, unitPrice, suggested, isManual };
+    const product = item?.productId ? productById.get(item.productId) : undefined;
+    return { id, quantity, unitPrice, suggested, isManual, product };
   });
   const extraPercent = parseMoneyInput(String(watched.discountPercent ?? "")) ?? D(0);
   const totals = quoteBreakdown(
@@ -121,6 +129,16 @@ export function QuoteEditor({
     })),
     extraPercent,
   );
+  // Ganancia estimada con los costos de hoy, igual que en la sección de abajo pero sin tener que guardar.
+  const estimate = saleProfit({
+    items: lines.map((l) => ({ quantity: l.quantity, unitPrice: l.unitPrice, unitCost: l.product?.cost ?? null })),
+    discountPercent: extraPercent,
+    vatRate: profit.vatRate,
+    channel: profit.channel,
+  });
+  const ownLabor = sum(lines.map((l) => (l.product ? D(l.product.ownLabor).times(l.quantity) : D(0))));
+  const paid = parseMoneyInput(String(watched.paidAmount ?? "")) ?? D(0);
+  const balance = totals.total.minus(paid);
 
   function setSuggestedPrice(index: number, productId: string | null | undefined, quantity: unknown) {
     const s = suggest(productId, quantity, parseTiers(getValues("volumeTiers")));
@@ -362,6 +380,32 @@ export function QuoteEditor({
                     </Button>
                   </div>
                   <FieldError message={errors.items?.[i]?.quantity?.message ?? errors.items?.[i]?.unitPrice?.message} />
+                  {(() => {
+                    const est = estimate.lines[i];
+                    if (!est?.profit || est.revenue.lte(0)) return null;
+                    const loss = est.profit.lt(0);
+                    if (!loss && est.profit.div(est.revenue).gte(LOW_MARGIN)) return null;
+                    return (
+                      <p
+                        className={cn(
+                          "flex items-center gap-1.5 text-xs font-medium",
+                          loss ? "text-destructive" : "text-[#9a5b13] dark:text-[#f0c27a]",
+                        )}
+                      >
+                        <AlertTriangleIcon className="size-3.5 shrink-0" />
+                        {loss ? (
+                          <>
+                            Con este precio perdés <Money value={est.profit.abs().toString()} />
+                          </>
+                        ) : (
+                          <>
+                            Te deja poco: <Money value={est.profit.toString()} /> (
+                            {formatPercent(est.profit.div(est.revenue).times(100), 0)})
+                          </>
+                        )}
+                      </p>
+                    );
+                  })()}
 
                   {/* Qué pasó con el precio de este ítem, en una línea. */}
                   {s && (
@@ -523,6 +567,63 @@ export function QuoteEditor({
                 </p>
               )}
             </dl>
+
+            <dl className="grid gap-1 rounded-lg border border-dashed p-3 text-sm">
+              <div className="flex items-center justify-between">
+                <dt className="flex items-center gap-1 text-muted-foreground">
+                  Ganancia estimada
+                  <InfoTooltip>
+                    Con los costos de hoy{profit.channel ? `, vendiendo por ${profit.channel.name}` : ""}. Solo la ves vos:
+                    no sale en el PDF ni en el ticket.
+                  </InfoTooltip>
+                </dt>
+                <dd className={cn("font-semibold", estimate.profit.lt(0) ? "text-destructive" : "text-tinta dark:text-menta")}>
+                  <Money value={estimate.profit.toString()} />
+                </dd>
+              </div>
+              {ownLabor.gt(0) && (
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <dt>Te queda con tu mano de obra</dt>
+                  <dd>
+                    <Money value={estimate.profit.plus(ownLabor).toString()} />
+                  </dd>
+                </div>
+              )}
+              {estimate.skippedItems > 0 && (
+                <p className="text-xs text-muted-foreground">Los ítems libres no cuentan: no sabemos cuánto cuestan.</p>
+              )}
+            </dl>
+
+            <Field label="Seña / ya pagó" htmlFor="q-paid" error={errors.paidAmount?.message}>
+              <div className="flex items-center gap-1.5">
+                <Input id="q-paid" inputMode="decimal" placeholder="$ 0" {...register("paidAmount")} />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() =>
+                    setValue("paidAmount", toInputString(roundCents(totals.total.div(2))), {
+                      shouldValidate: true,
+                      shouldDirty: true,
+                    })
+                  }
+                >
+                  50%
+                </Button>
+              </div>
+            </Field>
+            {paid.gt(0) && (
+              <div className="-mt-2 flex justify-between text-sm">
+                <span className="text-muted-foreground">Resta pagar</span>
+                <span className={cn("font-semibold", balance.lt(0) && "text-destructive")}>
+                  <Money value={balance.toString()} />
+                </span>
+              </div>
+            )}
+
+            <Field label="Fecha de entrega" htmlFor="q-delivery" error={errors.deliveryDate?.message} hint="Para ordenar tus pedidos">
+              <Input id="q-delivery" type="date" {...register("deliveryDate")} />
+            </Field>
 
             <Field label="Válido hasta" htmlFor="q-valid" error={errors.validUntil?.message}>
               <Input id="q-valid" type="date" {...register("validUntil")} />

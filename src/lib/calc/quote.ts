@@ -1,5 +1,6 @@
 import { D, Decimal, ZERO, pct, roundCents, sum, type DecimalInput } from "@/lib/money";
 import { discountForQuantity, type VolumeTierInput } from "./pricing";
+import { supplyUnitCost } from "./supply";
 
 export interface QuoteLine {
   quantity: DecimalInput;
@@ -73,4 +74,67 @@ export function quoteBreakdown(
     }),
   );
   return { ...totals, atList: totals.subtotal.plus(volumeDiscount), volumeDiscount };
+}
+
+export interface MaterialOrderLine {
+  /** Unidades pedidas de este producto. */
+  quantity: DecimalInput;
+  batchYield: DecimalInput;
+  /** Merma del producto en %: si viene, se suma a lo que hay que tener. */
+  wastePercent?: DecimalInput;
+  supplies: {
+    id: string;
+    name: string;
+    usageUnit: string;
+    purchaseUnit: string;
+    packQuantity: DecimalInput;
+    packPrice: DecimalInput;
+    /** Cantidad usada por LOTE. */
+    quantity: DecimalInput;
+  }[];
+}
+
+export interface MaterialNeed {
+  id: string;
+  name: string;
+  usageUnit: string;
+  purchaseUnit: string;
+  /** Cuánto se usa en todo el pedido, en unidades de uso. */
+  needed: Decimal;
+  packQuantity: Decimal;
+  /** Paquetes enteros que alcanzan para el pedido. */
+  packs: number;
+  /** Lo que cuesta lo que se usa (no los paquetes enteros). */
+  cost: Decimal;
+}
+
+/**
+ * Materiales que lleva un pedido, sumando los insumos que se repiten entre productos.
+ * Proporcional a lo pedido: 10 tarjetas con rinde 4 por hoja = 2,5 hojas (más la merma, si viene).
+ */
+export function quoteMaterials(lines: MaterialOrderLine[]): MaterialNeed[] {
+  const byId = new Map<string, MaterialNeed>();
+  for (const line of lines) {
+    const batches = D(line.quantity)
+      .div(D(line.batchYield))
+      .times(D(1).plus(pct(line.wastePercent ?? 0)));
+    for (const s of line.supplies) {
+      const needed = D(s.quantity).times(batches);
+      const cost = needed.times(supplyUnitCost(s));
+      const prev = byId.get(s.id);
+      byId.set(s.id, {
+        id: s.id,
+        name: s.name,
+        usageUnit: s.usageUnit,
+        purchaseUnit: s.purchaseUnit,
+        packQuantity: D(s.packQuantity),
+        needed: prev ? prev.needed.plus(needed) : needed,
+        packs: 0,
+        cost: prev ? prev.cost.plus(cost) : cost,
+      });
+    }
+  }
+  return [...byId.values()]
+    .map((m) => ({ ...m, packs: m.needed.div(m.packQuantity).ceil().toNumber() }))
+    .sort((a, b) => a.name.localeCompare(b.name, "es"));
 }

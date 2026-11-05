@@ -31,7 +31,7 @@ export type Tier = "FREE" | "COMPLETE";
 const FREE_MODELS = new Set(["Business", "Supply", "SupplyPriceHistory", "Product", "ProductSupply", "ProductLabor", "ProductMachine", "SalesChannel", "VolumeTier"]);
 
 /** Secciones del plan completo. */
-export const PAID_SECTIONS = ["/mano-de-obra", "/costos-fijos", "/presupuestos", "/ventas", "/inversiones", "/impresion", "/calculadora", "/api/presupuestos"];
+export const PAID_SECTIONS = ["/mano-de-obra", "/costos-fijos", "/presupuestos", "/pedidos", "/ventas", "/inversiones", "/impresion", "/calculadora", "/api/presupuestos"];
 
 export function canWrite(tier: Tier, model: string): boolean {
   return tier === "COMPLETE" || FREE_MODELS.has(model);

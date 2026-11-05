@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { quoteBreakdown, quoteTotals, volumePrice } from "@/lib/calc/quote";
+import { quoteBreakdown, quoteMaterials, quoteTotals, volumePrice } from "@/lib/calc/quote";
 import { buildQuoteMessage } from "@/lib/quote-text";
 
 describe("presupuestos", () => {
@@ -71,5 +71,28 @@ describe("presupuestos", () => {
     expect(b.atList.toString()).toBe("38941");
     expect(b.discount.toString()).toBe("3400");
     expect(b.total.toString()).toBe("30600");
+  });
+
+  it("materiales del pedido, sumando insumos repetidos", () => {
+    const hoja = { id: "hoja", name: "Hoja A4", usageUnit: "hoja", purchaseUnit: "resma", packQuantity: "100", packPrice: "5000" };
+    const film = { id: "film", name: "Film", usageUnit: "hoja", purchaseUnit: "caja", packQuantity: "50", packPrice: "10000" };
+    const m = quoteMaterials([
+      { quantity: "10", batchYield: "4", supplies: [{ ...hoja, quantity: "1" }] },
+      { quantity: "3", batchYield: "1", supplies: [{ ...hoja, quantity: "1" }, { ...film, quantity: "2" }] },
+    ]);
+    expect(m.map((x) => x.name)).toEqual(["Film", "Hoja A4"]);
+    const [f, h] = m;
+    expect(h.needed.toString()).toBe("5.5");
+    expect(h.packs).toBe(1);
+    expect(h.cost.toString()).toBe("275");
+    expect(f.needed.toString()).toBe("6");
+    expect(f.cost.toString()).toBe("1200");
+  });
+
+  it("materiales con merma", () => {
+    const hoja = { id: "hoja", name: "Hoja A4", usageUnit: "hoja", purchaseUnit: "resma", packQuantity: "100", packPrice: "5000" };
+    const [h] = quoteMaterials([{ quantity: "8", batchYield: "4", wastePercent: "10", supplies: [{ ...hoja, quantity: "1" }] }]);
+    expect(h.needed.toString()).toBe("2.2");
+    expect(h.cost.toString()).toBe("110");
   });
 });
