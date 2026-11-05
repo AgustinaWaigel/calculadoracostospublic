@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertTriangleIcon, SearchIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Money } from "@/components/shared/money";
 import { formatNumber } from "@/lib/money";
 
@@ -23,10 +24,55 @@ export interface SupplyRow {
   daysSinceUpdate: number;
   stale: boolean;
   usedInCount: number;
+  updatedAt: string;
 }
+
+const byName = (a: SupplyRow, b: SupplyRow) => a.name.localeCompare(b.name, "es");
+
+const SORTS = {
+  recent: {
+    label: "Últimos agregados o editados",
+    compare: (a: SupplyRow, b: SupplyRow) => b.updatedAt.localeCompare(a.updatedAt),
+  },
+  name: { label: "Nombre (A–Z)", compare: byName },
+  category: {
+    label: "Categoría",
+    // Los que no tienen categoría van al final.
+    compare: (a: SupplyRow, b: SupplyRow) => {
+      if (a.category === b.category) return byName(a, b);
+      if (!a.category || !b.category) return a.category ? -1 : 1;
+      return a.category.localeCompare(b.category, "es");
+    },
+  },
+  stale: {
+    label: "Precio más viejo primero",
+    compare: (a: SupplyRow, b: SupplyRow) => b.daysSinceUpdate - a.daysSinceUpdate || byName(a, b),
+  },
+} as const;
+type SortKey = keyof typeof SORTS;
+const SORT_STORAGE_KEY = "calc-orden-insumos";
+const isSortKey = (v: string | null): v is SortKey => !!v && v in SORTS;
 
 export function SuppliesList({ rows }: { rows: SupplyRow[] }) {
   const [q, setQ] = useState("");
+  const [sort, setSort] = useState<SortKey>("recent");
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(SORT_STORAGE_KEY);
+      if (isSortKey(saved)) setSort(saved);
+    } catch {
+      // sin storage: queda el orden por defecto
+    }
+  }, []);
+  function changeSort(v: string) {
+    if (!isSortKey(v)) return;
+    setSort(v);
+    try {
+      localStorage.setItem(SORT_STORAGE_KEY, v);
+    } catch {
+      // no pasa nada si no se puede guardar
+    }
+  }
   const [category, setCategory] = useState<string | null>(null);
   const [kind, setKind] = useState<SupplyRow["kind"] | null>(null);
   const hasBothKinds = rows.some((r) => r.kind === "SERVICE") && rows.some((r) => r.kind === "MATERIAL");
@@ -34,12 +80,14 @@ export function SuppliesList({ rows }: { rows: SupplyRow[] }) {
     () => [...new Set(rows.map((r) => r.category).filter((c): c is string => !!c))].sort(),
     [rows],
   );
-  const filtered = rows.filter(
-    (r) =>
-      (!category || r.category === category) &&
-      (!kind || r.kind === kind) &&
-      (!q || `${r.name} ${r.supplier ?? ""} ${r.category ?? ""}`.toLowerCase().includes(q.toLowerCase())),
-  );
+  const filtered = rows
+    .filter(
+      (r) =>
+        (!category || r.category === category) &&
+        (!kind || r.kind === kind) &&
+        (!q || `${r.name} ${r.supplier ?? ""} ${r.category ?? ""}`.toLowerCase().includes(q.toLowerCase())),
+    )
+    .sort(SORTS[sort].compare);
 
   return (
     <div className="grid gap-3">
@@ -48,6 +96,18 @@ export function SuppliesList({ rows }: { rows: SupplyRow[] }) {
           <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar insumo…" className="pl-8" />
         </div>
+        <Select value={sort} onValueChange={changeSort}>
+          <SelectTrigger className="w-full sm:w-60" aria-label="Ordenar">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(SORTS).map(([key, s]) => (
+              <SelectItem key={key} value={key}>
+                {s.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         {hasBothKinds && (
           <div className="flex gap-1 rounded-lg border bg-card p-0.5" role="radiogroup" aria-label="Tipo de insumo">
             {(

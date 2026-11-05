@@ -11,7 +11,7 @@ export const metadata = { title: "Insumos" };
 export default async function InsumosPage() {
   const db = await userDb();
   const supplies = await db.supply.findMany({
-    orderBy: [{ category: "asc" }, { name: "asc" }],
+    orderBy: { updatedAt: "desc" },
     include: { _count: { select: { usedIn: true } } },
   });
   const now = new Date();
@@ -29,6 +29,7 @@ export default async function InsumosPage() {
     daysSinceUpdate: daysSince(s.priceUpdatedAt, now),
     stale: isPriceStale(s.priceUpdatedAt, now),
     usedInCount: s._count.usedIn,
+    updatedAt: s.updatedAt.toISOString(),
   }));
   const staleCount = rows.filter((r) => r.stale).length;
 
