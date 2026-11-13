@@ -1,115 +1,166 @@
-import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import type { CSSProperties, ReactNode } from "react";
+import { ImageResponse } from "next/og";
+import satori from "satori";
 import { quoteTotals } from "@/lib/calc/quote";
 import { D, formatMoney, formatNumber, formatPercent } from "@/lib/money";
 import { formatQuoteNumber } from "@/lib/quote-text";
-import { DISPLAY, PALETTE, TEXT, dateFmt, type QuotePdfData } from "./quote-pdf";
+import type { QuotePdfData } from "./quote-pdf";
+import { PALETTE } from "./quote-palette";
 
+const dateFmt = new Intl.DateTimeFormat("es-AR", { dateStyle: "long", timeZone: "UTC" });
 const deliveryFmt = new Intl.DateTimeFormat("es-AR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
 
-// Ticket de 80 mm de ancho (el de las impresoras térmicas). El alto crece con la cantidad de ítems.
-const WIDTH = 80 * 2.835;
+// Ancho del ticket en píxeles (proporción de un ticket térmico de 80 mm, con buena resolución para
+// mandarlo por WhatsApp). El alto crece con la cantidad de ítems.
+const WIDTH = 720;
+/** Escala de puntos (los tamaños del ticket en PDF) a píxeles. */
+const px = (pt: number) => Math.round(pt * 3.2 * 10) / 10;
 
-const s = StyleSheet.create({
-  page: { padding: 14, fontSize: 8.5, fontFamily: TEXT, color: PALETTE.ink },
-  center: { textAlign: "center" },
-  businessName: { fontFamily: DISPLAY, fontSize: 16, textAlign: "center", textTransform: "uppercase" },
-  contact: { fontSize: 7.5, textAlign: "center", color: PALETTE.inkSoft },
-  rule: { borderBottomWidth: 1, borderColor: PALETTE.ink, borderStyle: "dashed", marginVertical: 7 },
-  title: { fontFamily: DISPLAY, fontSize: 13, textAlign: "center", textTransform: "uppercase", color: PALETTE.ink },
-  row: { flexDirection: "row", justifyContent: "space-between" },
+const DISPLAY = "Londrina";
+const TEXT = "Karla";
+
+const s = {
+  page: {
+    width: WIDTH,
+    display: "flex",
+    flexDirection: "column",
+    padding: px(14),
+    fontSize: px(8.5),
+    fontFamily: TEXT,
+    color: PALETTE.ink,
+    background: PALETTE.paper,
+  },
+  center: { display: "flex", justifyContent: "center", textAlign: "center", flexWrap: "wrap" },
+  businessName: { fontFamily: DISPLAY, fontSize: px(16), textTransform: "uppercase" },
+  contact: { fontSize: px(7.5), color: PALETTE.inkSoft },
+  rule: { borderBottom: `2px dashed ${PALETTE.ink}`, marginTop: px(7), marginBottom: px(7) },
+  title: { fontFamily: DISPLAY, fontSize: px(13), textTransform: "uppercase" },
+  row: { display: "flex", justifyContent: "space-between" },
   bold: { fontWeight: 700 },
-  item: { marginBottom: 4 },
-  muted: { color: PALETTE.inkSoft, fontSize: 7.5 },
-  total: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", marginTop: 3 },
-  totalLabel: { fontFamily: DISPLAY, fontSize: 13, textTransform: "uppercase" },
-  totalValue: { fontFamily: DISPLAY, fontSize: 15 },
-  legal: { fontSize: 7, textAlign: "center", color: PALETTE.inkSoft, marginTop: 4 },
-  phrase: { fontFamily: DISPLAY, fontSize: 10, textAlign: "center", color: PALETTE.ink, marginTop: 2 },
-});
+  muted: { color: PALETTE.inkSoft, fontSize: px(7.5) },
+  total: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: px(3) },
+  totalLabel: { fontFamily: DISPLAY, fontSize: px(13), textTransform: "uppercase" },
+  totalValue: { fontFamily: DISPLAY, fontSize: px(15) },
+  legal: { fontSize: px(7), color: PALETTE.inkSoft, marginTop: px(4) },
+  phrase: { fontFamily: DISPLAY, fontSize: px(10), marginTop: px(2) },
+} satisfies Record<string, CSSProperties>;
 
-function Line({ label, value }: { label: string; value: string }) {
+function Line({ label, value, style }: { label: string; value: string; style?: CSSProperties }) {
   return (
-    <View style={s.row}>
-      <Text>{label}</Text>
-      <Text>{value}</Text>
-    </View>
+    <div style={{ ...s.row, ...style }}>
+      <span>{label}</span>
+      <span>{value}</span>
+    </div>
   );
 }
 
+function Center({ children, style }: { children: ReactNode; style?: CSSProperties }) {
+  return <div style={{ ...s.center, ...style }}>{children}</div>;
+}
+
+const Rule = () => <div style={s.rule} />;
+
 /**
- * Ticket del pedido: corto, para darle al cliente en mano (para quién, para cuándo, cuánto pagó y
- * cuánto le falta). Con `receipt` es el recibo de lo que ya pagó (no es una factura).
+ * Ticket del pedido: corto, para darle al cliente (para quién, para cuándo, cuánto pagó y cuánto
+ * le falta). Con `receipt` es el recibo de lo que ya pagó (no es una factura).
  */
 export function QuoteTicket({ q, receipt = false }: { q: QuotePdfData; receipt?: boolean }) {
   const t = quoteTotals(q.items, q.discountPercent);
   const paid = D(q.paidAmount);
   const balance = t.total.minus(paid);
   const kind = receipt ? "Recibo" : "Pedido";
-  const contact = [q.business.phone, q.business.instagram, q.business.address].filter(Boolean);
+  const contact = [q.business.phone, q.business.instagram, q.business.address].filter(Boolean) as string[];
 
   return (
-    <Document title={`${kind} ${formatQuoteNumber(q.number)} - ${q.clientName}`} author={q.business.name}>
-      <Page size={{ width: WIDTH }} style={s.page} wrap={false}>
-        <Text style={s.businessName}>{q.business.name}</Text>
-        {contact.map((c) => (
-          <Text key={c} style={s.contact}>
-            {c}
-          </Text>
-        ))}
+    <div style={s.page}>
+      <Center style={s.businessName}>{q.business.name}</Center>
+      {contact.map((c) => (
+        <Center key={c} style={s.contact}>
+          {c}
+        </Center>
+      ))}
 
-        <View style={s.rule} />
-        <Text style={s.title}>
-          {kind} {formatQuoteNumber(q.number)}
-        </Text>
-        <Text style={[s.center, s.muted]}>{dateFmt.format(receipt ? new Date() : q.createdAt)}</Text>
-        <Text style={[s.center, { marginTop: 3 }]}>
-          Para: <Text style={s.bold}>{q.clientName}</Text>
-        </Text>
-        {q.deliveryDate && (
-          <Text style={s.center}>
-            Entrega: <Text style={s.bold}>{deliveryFmt.format(q.deliveryDate)}</Text>
-          </Text>
-        )}
+      <Rule />
+      <Center style={s.title}>{`${kind} ${formatQuoteNumber(q.number)}`}</Center>
+      <Center style={s.muted}>{dateFmt.format(receipt ? new Date() : q.createdAt)}</Center>
+      <Center style={{ marginTop: px(3) }}>
+        <span style={{ marginRight: px(2) }}>Para:</span>
+        <span style={s.bold}>{q.clientName}</span>
+      </Center>
+      {q.deliveryDate && (
+        <Center>
+          <span style={{ marginRight: px(2) }}>Entrega:</span>
+          <span style={s.bold}>{deliveryFmt.format(q.deliveryDate)}</span>
+        </Center>
+      )}
 
-        <View style={s.rule} />
-        {q.items.map((item, i) => (
-          <View key={i} style={s.item}>
-            <Text style={s.bold}>{item.description}</Text>
-            <Line label={`${formatNumber(item.quantity)} × ${formatMoney(item.unitPrice)}`} value={formatMoney(t.lines[i])} />
-          </View>
-        ))}
+      <Rule />
+      {q.items.map((item, i) => (
+        <div key={i} style={{ display: "flex", flexDirection: "column", marginBottom: px(4) }}>
+          <span style={s.bold}>{item.description}</span>
+          <Line label={`${formatNumber(item.quantity)} × ${formatMoney(item.unitPrice)}`} value={formatMoney(t.lines[i])} />
+        </div>
+      ))}
 
-        <View style={s.rule} />
-        {!D(q.discountPercent).isZero() && (
-          <>
-            <Line label="Subtotal" value={formatMoney(t.subtotal)} />
-            <Line label={`Descuento ${formatPercent(q.discountPercent, 0)}`} value={`-${formatMoney(t.discount)}`} />
-          </>
-        )}
-        <View style={s.total}>
-          <Text style={s.totalLabel}>Total</Text>
-          <Text style={s.totalValue}>{formatMoney(t.total)}</Text>
-        </View>
-        <View style={{ marginTop: 3 }}>
-          <Line label={receipt ? "Recibimos" : "Seña"} value={paid.gt(0) ? formatMoney(paid) : "Sin seña"} />
-        </View>
-        <View style={s.total}>
-          <Text style={s.bold}>Resta pagar</Text>
-          <Text style={s.bold}>{formatMoney(balance.gt(0) ? balance : 0)}</Text>
-        </View>
+      <Rule />
+      {!D(q.discountPercent).isZero() && (
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <Line label="Subtotal" value={formatMoney(t.subtotal)} />
+          <Line label={`Descuento ${formatPercent(q.discountPercent, 0)}`} value={`-${formatMoney(t.discount)}`} />
+        </div>
+      )}
+      <div style={s.total}>
+        <span style={s.totalLabel}>Total</span>
+        <span style={s.totalValue}>{formatMoney(t.total)}</span>
+      </div>
+      <Line
+        style={{ marginTop: px(3) }}
+        label={receipt ? "Recibimos" : "Seña"}
+        value={paid.gt(0) ? formatMoney(paid) : "Sin seña"}
+      />
+      <div style={{ ...s.total, ...s.bold }}>
+        <span>Resta pagar</span>
+        <span>{formatMoney(balance.gt(0) ? balance : 0)}</span>
+      </div>
 
-        {q.notes && (
-          <>
-            <View style={s.rule} />
-            <Text>{q.notes}</Text>
-          </>
-        )}
+      {q.notes && (
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <Rule />
+          <div style={{ display: "flex", whiteSpace: "pre-wrap" }}>{q.notes}</div>
+        </div>
+      )}
 
-        <View style={s.rule} />
-        <Text style={s.phrase}>{PALETTE.closing}</Text>
-        <Text style={[s.center, s.muted]}>¡Gracias por tu pedido!</Text>
-        {receipt && <Text style={s.legal}>Comprobante no válido como factura.</Text>}
-      </Page>
-    </Document>
+      <Rule />
+      <Center style={s.phrase}>{PALETTE.closing}</Center>
+      <Center style={s.muted}>¡Gracias por tu pedido!</Center>
+      {receipt && <Center style={s.legal}>Comprobante no válido como factura.</Center>}
+    </div>
   );
+}
+
+// Las fuentes viajan con la app (licencia OFL), igual que en el PDF.
+let fontsPromise: Promise<{ name: string; data: Buffer; weight: 400 | 700 }[]> | null = null;
+function loadFonts() {
+  const dir = path.join(process.cwd(), "src/assets/fonts");
+  fontsPromise ??= Promise.all([
+    readFile(path.join(dir, "LondrinaSolid-Regular.ttf")).then((data) => ({ name: DISPLAY, data, weight: 400 as const })),
+    readFile(path.join(dir, "Karla-400.ttf")).then((data) => ({ name: TEXT, data, weight: 400 as const })),
+    readFile(path.join(dir, "Karla-700.ttf")).then((data) => ({ name: TEXT, data, weight: 700 as const })),
+  ]).catch((e) => {
+    fontsPromise = null;
+    throw e;
+  });
+  return fontsPromise;
+}
+
+/** Arma el ticket como PNG. Primero mide el alto (crece con los ítems) y después lo dibuja. */
+export async function renderTicketPng(q: QuotePdfData, receipt = false): Promise<ArrayBuffer> {
+  const fonts = await loadFonts();
+  const element = <QuoteTicket q={q} receipt={receipt} />;
+  const svg = await satori(element, { width: WIDTH, fonts });
+  const height = Math.ceil(Number(/<svg[^>]*\sheight="([\d.]+)"/.exec(svg)?.[1] ?? 1200));
+  const image = new ImageResponse(element, { width: WIDTH, height, fonts });
+  return image.arrayBuffer();
 }
