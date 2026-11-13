@@ -41,6 +41,7 @@ const nextConfig: NextConfig = {
   // las estándar (Helvetica, etc.) con un require dinámico que el rastreo no detecta solo.
   outputFileTracingIncludes: {
     "/api/presupuestos/[id]/pdf": ["./src/assets/fonts/**", "./node_modules/pdfkit/js/standard-fonts/**"],
+    "/api/presupuestos/[id]/ticket": ["./src/assets/fonts/**"],
     "/presentacion/opengraph-image": ["./src/assets/fonts/**"],
   },
   async headers() {

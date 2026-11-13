@@ -60,7 +60,7 @@ export default async function PresupuestoPage({
             status={quote.status}
             production={quote.production}
             hasPayment={quote.paidAmount.gt(0)}
-            fileName={`ticket-${formatQuoteNumber(quote.number).slice(1)}.pdf`}
+            fileName={`ticket-${formatQuoteNumber(quote.number).slice(1)}.png`}
             whatsappHref={whatsappUrl(message, quote.clientPhone)}
           />
         }

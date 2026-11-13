@@ -41,7 +41,7 @@ export function QuoteActions({
   production: (typeof productionStatuses)[number];
   /** Si ya pagó algo, se puede sacar el recibo. */
   hasPayment: boolean;
-  /** Nombre del PDF del ticket al compartirlo. */
+  /** Nombre de la imagen del ticket al compartirla. */
   fileName: string;
   whatsappHref: string;
 }) {
@@ -49,7 +49,7 @@ export function QuoteActions({
   const statusAction = useAction();
   const duplicateAction = useAction();
   const [sharing, setSharing] = useState(false);
-  const ticketUrl = `/api/presupuestos/${id}/pdf?ticket`;
+  const ticketUrl = `/api/presupuestos/${id}/ticket`;
 
   /** Manda el ticket como archivo (WhatsApp, mail…) desde el celu. Si el navegador no puede, lo descarga. */
   async function shareTicket() {
@@ -58,7 +58,7 @@ export function QuoteActions({
       const res = await fetch(ticketUrl);
       if (!res.ok) throw new Error("No se pudo generar el ticket");
       const blob = await res.blob();
-      const file = new File([blob], fileName, { type: "application/pdf" });
+      const file = new File([blob], fileName, { type: "image/png" });
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file] });
       } else {
@@ -103,7 +103,7 @@ export function QuoteActions({
         </a>
       </Button>
       <Button asChild variant="outline">
-        <a href={`${ticketUrl}&ver`} target="_blank" rel="noreferrer">
+        <a href={`${ticketUrl}?ver`} target="_blank" rel="noreferrer">
           <ReceiptTextIcon /> Ticket del pedido
         </a>
       </Button>
@@ -136,7 +136,7 @@ export function QuoteActions({
           </DropdownMenuItem>
           {hasPayment && (
             <DropdownMenuItem asChild>
-              <a href={`/api/presupuestos/${id}/pdf?recibo&ver`} target="_blank" rel="noreferrer">
+              <a href={`/api/presupuestos/${id}/ticket?recibo&ver`} target="_blank" rel="noreferrer">
                 <ReceiptIcon /> Recibo de pago
               </a>
             </DropdownMenuItem>
